@@ -1,5 +1,6 @@
 [project]
 name = "rsp_queries"
+license  = {file = "LICENSE"}
 readme = "README.md"
 authors = [
     { name = "Carrie Holt", email = "cholt@lco.global"},
