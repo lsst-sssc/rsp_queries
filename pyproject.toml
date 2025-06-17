@@ -1,3 +1,19 @@
+[project]
+name = "rsp_queries"
+readme = "README.md"
+authors = [
+    { name = "Carrie Holt", email = "cholt@lco.global"},
+    { name = "Tim Lister", email = "tlister@lco.global"},
+]
+dynamic = ["version"]
+requires-python = ">=3.9"
+dependencies = [
+    "pytest"
+]
+
+[project.urls]
+"Source Code" = "https://github.com/lsst-sssc/rsp_queries"
+
 [tool.pytest.ini_options]
 pythonpath = [
   "."
