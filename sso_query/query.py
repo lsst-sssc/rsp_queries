@@ -38,6 +38,31 @@ def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cuto
 
     return query
 
-def run_query(query_string)
+def run_query(query_string, to_pandas = False):
+    """
+    Function runs SSOtap using query_string. Default returns data in the form of an AstroPy Table.
+    Args:
+        query_string: String representing query to pass to SSOtap.
+        return_item: String representing the type of dataframe to return with queried data. 
+        to_pandas: Boolean representing whether or not to convert job results to pandas table. Default is an AstroPy table.
+    """
+    # getting the Rubin tap service client 
+    service = get_tap_service("ssotap")
+    assert service is not None
+    
+    # running the job
+    job = service.submit_job(query_string)
+    job.run()
+    job.wait(phases=['COMPLETED', 'ERROR'])
+    print('Job phase is', job.phase)
+    if to_pandas is False: #AstroPy table
+        unique_objects = job.fetch_result().to_table()
+        print(unique_objects[0:5]) # print first few rows 
+    else: #pandas table
+        unique_objects = job.fetch_result().to_table().to_pandas()
+        print(unique_objects.head(5)) # print first five rows
+    assert job.phase == 'COMPLETED'
+
+    return unique_objects
 
 
