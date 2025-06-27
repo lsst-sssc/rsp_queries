@@ -12,6 +12,14 @@ dependencies = [
     "pytest"
 ]
 
+[project.optional-dependencies]
+dev = [
+    "ipython",
+    "jupyter", # Clears output from Jupyter notebooks
+    "pytest",
+    "pytest-cov", # Used to report total code coverage
+]
+
 [project.urls]
 "Source Code" = "https://github.com/lsst-sssc/rsp_queries"
 
