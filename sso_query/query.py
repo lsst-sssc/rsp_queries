@@ -1,6 +1,7 @@
 
 # MPCORB 10-year data table
-# ordered in terms of specificity - narrow cases first
+from lsst.rsp import get_tap_service
+import matplotlib.pyplot as plt
 
 def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cutoff = None, a_cutoff = None, a_cutoff_min = None): 
     """
@@ -16,7 +17,7 @@ def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cuto
         query: String representing query that can be passed to SSOtap.
         
     """
-    query_start = f"""SELECT q/(1-e) as a, q, e FROM dp03_catalogs_10yr.MPCORB as mpc
+    query_start = f"""SELECT incl, q, e FROM dp03_catalogs_10yr.MPCORB as mpc
             WHERE"""
     conditions = []
 
@@ -29,9 +30,9 @@ def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cuto
     if e_cutoff is not None:
         conditions.append(f"mpc.e < {e_cutoff}")
     if a_cutoff_min is not None:
-        conditions.append(f"mpc.a > {a_cutoff_min}")
+        conditions.append(f"mpc.q/(1-mpc.e) > {a_cutoff_min}")
     if a_cutoff is not None:
-        conditions.append(f"mpc.a < {a_cutoff}")
+        conditions.append(f"mpc.q/(1-mpc.e) < {a_cutoff}")
 
     query = query_start + " " + " AND ".join(conditions)
     query = query + ";"
@@ -45,6 +46,8 @@ def run_query(query_string, to_pandas = False):
         query_string: String representing query to pass to SSOtap.
         return_item: String representing the type of dataframe to return with queried data. 
         to_pandas: Boolean representing whether or not to convert job results to pandas table. Default is an AstroPy table.
+    Returns: 
+        unique_objects: Data table with the job results. 
     """
     # getting the Rubin tap service client 
     service = get_tap_service("ssotap")
@@ -64,5 +67,55 @@ def run_query(query_string, to_pandas = False):
     assert job.phase == 'COMPLETED'
 
     return unique_objects
+
+def calc_semimajor_axis(q, e):
+    """
+    Given a perihelion distance and orbital eccentricity,
+    calculate the semi-major axis of the orbit.
+    Args: 
+        q: ndarray
+            Distance at perihelion, in au.
+        e: ndarray
+            Orbital eccentricity.
+
+    Returns:
+        a: ndarray
+            Semi-major axis of the orbit, in au.
+            q = a(1-e), so a = q/(1-e)
+    """
+
+    return q / (1.0 - e)
+
+def plot_data(data_table, x, y, x_label, y_label):
+    """
+    Function that creates plots using the returned data table from the original query.
+    Args:
+        data_table: Astropy table from query. 
+        x: String representing column to plot on x axis.
+        y: String representing column to plot on y axis. 
+        x_label: String representing x axis label on plot.
+        y_label: String representing y axis label on plot. 
+    """
+    # How many objects of each type? (Main-belt, NEOs, TNOs, Centaurs, JFCs, LPCs) 
+    
+    # Orbital parameter plot (e.g., a vs e, a vs i)
+    fig, ax = plt.subplots()
+    # plt.xlim([0., 4.])
+    # plt.ylim([0., 1.])
+    ax.scatter(data_table[x], data_table[y], s=0.1) # a vs. e
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.minorticks_on()
+    plt.show()
+
+
+# next steps: Nora doing SSObject
+# Joined with DiaSource -> every observation for each object -> SSObject ID link?
+# How many observations for each object? In what filters?
+# What is the average magnitude range? Does any object have an unusually large range?
+
+
+    
+
 
 
