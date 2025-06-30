@@ -86,25 +86,33 @@ def calc_semimajor_axis(q, e):
 
     return q / (1.0 - e)
 
-def plot_data(data_table, x, y, x_label, y_label):
+def plot_data(data_table):
     """
-    Function that creates plots using the returned data table from the original query.
+    Function that creates  a vs. e, a vs. i plots using the returned data table from the original query.
     Args:
         data_table: Astropy table from query. 
-        x: String representing column to plot on x axis.
-        y: String representing column to plot on y axis. 
-        x_label: String representing x axis label on plot.
-        y_label: String representing y axis label on plot. 
     """
     # How many objects of each type? (Main-belt, NEOs, TNOs, Centaurs, JFCs, LPCs) 
     
-    # Orbital parameter plot (e.g., a vs e, a vs i)
+    # Orbital parameter plot (a vs e)
     fig, ax = plt.subplots()
     # plt.xlim([0., 4.])
     # plt.ylim([0., 1.])
-    ax.scatter(data_table[x], data_table[y], s=0.1) # a vs. e
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
+    ax.scatter(data_table["a"], data_table["e"], s=0.1) # a vs. e
+    ax.set_xlabel('semimajor axis (au)')
+    ax.set_ylabel('eccentricity')
+    ax.set_title("a vs. e")
+    ax.minorticks_on()
+    plt.show()
+
+    # Orbital parameter plot (a vs. i)
+    fig, ax = plt.subplots()
+    # plt.xlim([0., 4.])
+    # plt.ylim([0., 1.])
+    ax.scatter(data_table["a"], data_table["incl"], s=0.1) # a vs. i
+    ax.set_xlabel('semimajor axis (au)')
+    ax.set_ylabel('inclination (deg)')
+    ax.set_title("a vs. i")
     ax.minorticks_on()
     plt.show()
 
