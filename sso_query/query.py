@@ -3,7 +3,7 @@
 from lsst.rsp import get_tap_service
 import matplotlib.pyplot as plt
 
-def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cutoff = None, a_cutoff = None, a_cutoff_min = None): 
+def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cutoff = None, a_cutoff = None, a_cutoff_min = None, join = None): 
     """
     Function creates a string query that can be passed to SSOtap. 
     Args:
@@ -13,12 +13,21 @@ def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cuto
         e_cutoff: Float representing the max orbital eccentricity. 
         a_cutoff_min: Float representing the minimum semi-major axis of the orbit, in au.
         a_cutoff: Float representing the max semi-major axis of the orbit, in au.
+        join: String representing which dataset to 'join' statement to MPCOrbit dataset. Defualt none. 
     Returns:
         query: String representing query that can be passed to SSOtap.
         
     """
-    query_start = f"""SELECT incl, q, e FROM dp03_catalogs_10yr.MPCORB as mpc
-            WHERE"""
+    query_start = f"""SELECT incl, q, e ssObjectID, magTrueVband FROM dp03_catalogs_10yr.MPCORB as mpc"""
+
+    query = query_start
+
+    if join is not None:
+        if join == "Diasource":
+            query += f"""
+    INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId"""
+
+    # WHERE clause
     conditions = []
 
     if q_cutoff_min is not None:
@@ -34,7 +43,9 @@ def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cuto
     if a_cutoff is not None:
         conditions.append(f"mpc.q/(1-mpc.e) < {a_cutoff}")
 
-    query = query_start + " " + " AND ".join(conditions)
+    query += f"""
+    WHERE"""
+    query = query + " " + " AND ".join(conditions)
     query = query + ";"
 
     return query
