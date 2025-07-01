@@ -30,9 +30,9 @@ While it is strongly recommended to run queries in the Notebook aspect within th
 (This only needs to be done once per user)
 
 1. Obtain an access token from the RSP (tokens generated prior to DP1 are no longer valid/were wiped) by clicking on `Security tokens` under your login name in the top right as shown in the screenshot below:
-![Screenshot of the Rubin Science Platform showing the location of the Security tokens entry in the top right of the screen under the users' name][/docs/rsp_frontpage_scrnshot.png]
+![Screenshot of the Rubin Science Platform showing the location of the Security tokens entry in the top right of the screen under the users' name](/docs/rsp_frontpage_scrnshot.png)
 2. Click on the `Create Token` button, provide a name for your token such as `rsp_READ` and make sure to tick the `read:image` and `read:tap` options, leave the `Expires` option at `Never` and then click `Create`
-![Screenshot of the token creation dialog box showing the read:image and read:tap options are selected][/docs/rsp_create_token.png]
+![Screenshot of the token creation dialog box showing the read:image and read:tap options are selected](/docs/rsp_create_token.png)
 3. Make a copy of the generated token (should begin with `gt-`) and store it in a safe place as there is no way to see it again (you would need to delete and recreate it again if you lose it)
 4. _Make sure that you don't commit the token to any git repositories..._
 
