@@ -10,7 +10,7 @@ a more generally useful module over time.
 1. Checkout out the code to somewhere suitable e.g. `~/git/`:
    - `cd ~/git/`
    - `git clone https://github.com/lsst-sssc/rsp_queries`
-2. Create a virtual enviroment using e.g. `conda create --name <myenv>  python=3.11` or `python -m venv <myenv>`
+2. Create a virtual enviroment using e.g. `conda create --name <myenv> python=3.11` or `python -m venv <myenv>`
 3. Activate with `conda active <myenv>` or `source <myenv>/bin/activate` (or `<myenv>/Scripts/activate` on Windows)
 4. Install an editable (in-place) development version of rsp_queries. This will allow you to run the code from the source directory. If you just want the source code installed so edits in the source code are automatically installed:
 ```
