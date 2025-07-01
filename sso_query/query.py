@@ -18,7 +18,7 @@ def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cuto
         query: String representing query that can be passed to SSOtap.
         
     """
-    query_start = f"""SELECT incl, q, e ssObjectID, magTrueVband FROM dp03_catalogs_10yr.MPCORB as mpc"""
+    query_start = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband FROM dp03_catalogs_10yr.MPCORB as mpc"""
 
     query = query_start
 
@@ -153,6 +153,25 @@ def type_counts(data_table):
     # counting LPCs
     LPC_table = df[(df['a'] > 50)]
     print(f"LPC Count: {len(LPC_table)}")
+
+
+def type_classification(row): #no JFCs returned because it's the same criteria as the TNOs
+    """
+    Function takes one row in datatable, classifies row based on a, q, e parameters.
+    Args:
+        row: Row in pandas dataframe. 
+    """
+    if (2.0 < row['a'] < 3.2) and (row['q'] > 1.66):
+        return "MBA"
+    elif (row['q'] < 1.3) and (row['a'] > 4) and (row['e'] < 1):
+        return "NEO"
+    elif 30.1 < row['a'] < 50:
+        return "TNO"
+    elif 5.5 < row['a'] < 30.1:
+        return "Centaur"
+    elif row['a'] > 50:
+        return "LPC"
+        
 
 # next steps: Nora doing SSObject
 # Joined with DiaSource -> every observation for each object -> SSObject ID link?
