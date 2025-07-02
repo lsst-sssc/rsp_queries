@@ -7,17 +7,20 @@ import pandas as pd
 #################### Global ####################
 OBJECT_TYPE_CUTOFFS = {
     "LPC": {"a_cutoff_min": 50},
-    "Centaur": {"a_cutoff_min": 5.5, "a_cutoff": 30.1},
     "TNO": {"a_cutoff_min": 30.1, "a_cutoff": 50},
     "Ntrojan": {"a_cutoff_min": 29.8, "a_cutoff": 30.4},
     "NEO": {"q_cutoff": 1.3, "a_cutoff": 4.0, "e_cutoff": 1.0},
     "MBA": {"q_cutoff_min": 1.66, "a_cutoff_min": 2.0, "a_cutoff": 3.2},
+    "Centaur": {"a_cutoff_min": 5.5, "a_cutoff": 30.1},
     "Jtrojan": {"a_cutoff_min": 4.8, "a_cutoff": 5.4, "e_cutoff": 0.3},
+    "JFC": {"t_cutoff_min": 2.0, "t_cutoff": 3.0}
 }
+
+
 ################################################
 
 ##### Making query functions #####
-def make_query_general(object_type = None, q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cutoff = None, a_cutoff = None, a_cutoff_min = None, join = None):
+def make_query_general(object_type = None, q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cutoff = None, a_cutoff = None, a_cutoff_min = None, t_cutoff_min = None, t_cutoff = None, join = None):
     """
     Main query creation function. Returns query and object_type if relevant. 
     Args:
@@ -35,14 +38,16 @@ def make_query_general(object_type = None, q_cutoff_min = None, q_cutoff = None,
     """
         
     if object_type is None: # if no object type assigned, need to get the object type and use the cutoffs given 
-        query = make_query(q_cutoff_min, q_cutoff, e_cutoff_min, e_cutoff, a_cutoff, a_cutoff_min, join)
+        query = make_query(q_cutoff_min, q_cutoff, e_cutoff_min, e_cutoff, a_cutoff, a_cutoff_min, t_cutoff_min, t_cutoff, join)
         input_params = {
         "q_cutoff_min": q_cutoff_min, 
         "q_cutoff": q_cutoff, 
         "a_cutoff_min": a_cutoff_min, 
         "a_cutoff": a_cutoff, 
         "e_cutoff_min": e_cutoff_min, 
-        "e_cutoff": e_cutoff}
+        "e_cutoff": e_cutoff,
+        "t_cutoff_min": t_cutoff_min,
+        "t_cutoff": t_cutoff}
         object_type = type_classification(input_params = input_params)
         return query, object_type
 
@@ -53,7 +58,7 @@ def make_query_general(object_type = None, q_cutoff_min = None, q_cutoff = None,
     else:
         raise ValueError('Please enter a valid object type.')
 
-def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cutoff = None, a_cutoff = None, a_cutoff_min = None, join = None): 
+def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cutoff = None, a_cutoff = None, a_cutoff_min = None, t_cutoff_min = None, t_cutoff = None, join = None): 
     """
     Function creates a string query that can be passed to SSOtap. 
     Args:
@@ -63,18 +68,22 @@ def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cuto
         e_cutoff: Float representing the max orbital eccentricity. 
         a_cutoff_min: Float representing the minimum semi-major axis of the orbit, in au.
         a_cutoff: Float representing the max semi-major axis of the orbit, in au.
+        t_cutoff_min: 
+        t_cutoff: 
         join: String representing which dataset to 'join' statement to MPCOrbit dataset. Defualt none. 
     Returns:
         query: String representing query that can be passed to SSOtap.
     """
-    query_start = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc"""
+    query_start = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID"""
 
     query = query_start
 
     if join is not None:
         if join == "Diasource":
-            query += f"""
+            query += f""", dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId"""
+    else:
+        query += f" FROM dp03_catalogs_10yr.MPCORB as mpc"
 
     # WHERE clause
     conditions = []
@@ -91,7 +100,10 @@ def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cuto
         conditions.append(f"mpc.q/(1-mpc.e) > {a_cutoff_min}")
     if a_cutoff is not None:
         conditions.append(f"mpc.q/(1-mpc.e) < {a_cutoff}")
-
+    if t_cutoff_min is not None and t_cutoff is not None:
+        conditions.append(f"(mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e)) >= 0")
+        conditions.append(f"(5.204 * (1 - mpc.e)) / mpc.q + 2 * COS(RADIANS(mpc.incl)) * SQRT((mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e))) BETWEEN {t_cutoff_min} AND {t_cutoff}")
+        
     query += f"""
     WHERE"""
     query = query + " " + " AND ".join(conditions)
@@ -270,25 +282,6 @@ def type_counts(data_table):
     print(counts)
     return counts
     
-
-
-# def type_classification(row): #no JFCs returned because it's the same criteria as the TNOs
-#     """
-#     Function takes one row in datatable, classifies row based on a, q, e parameters.
-#     Args:
-#         row: Row in pandas dataframe. 
-#     """
-#     if (2.0 < row['a'] < 3.2) and (row['q'] > 1.66):
-#         return "MBA"
-#     elif (row['q'] < 1.3) and (row['a'] < 4) and (row['e'] < 1):
-#         return "NEO"
-#     elif 30.1 < row['a'] < 50:
-#         return "TNO"
-#     elif 5.5 < row['a'] < 30.1:
-#         return "Centaur"
-#     elif row['a'] > 50:
-#         return "LPC"
-        
 
 # next steps: Nora doing SSObject
 # Joined with DiaSource -> every observation for each object -> SSObject ID link?
