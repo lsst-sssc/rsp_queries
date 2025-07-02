@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 OBJECT_TYPE_CUTOFFS = {
     "LPC": {"a_cutoff_min": 50},
     "Centaur": {"a_cutoff_min": 5.5, "a_cutoff": 30.1},
-    "TNO": {"a_min": 30.1, "a_cutoff": 50},
+    "TNO": {"a_cutoff_min": 30.1, "a_cutoff": 50},
     "Ntrojan": {"a_cutoff_min": 29.8, "a_cutoff": 30.4},
-    "NEO": {"q_cutoff_min": 1.3, "a_cutoff_min": 4, "e_cutoff": 1},
+    "NEO": {"q_cutoff": 1.3, "a_cutoff": 4, "e_cutoff": 1},
     "MBA": {"q_cutoff_min": 1.66, "a_cutoff_min": 2.0, "a_cutoff": 3.2},
     "Jtrojan": {"a_cutoff_min": 4.8, "a_cutoff": 5.4, "e_cutoff": 0.3},
 }
@@ -145,26 +145,23 @@ def type_from_params(q_cutoff_min=None, q_cutoff = None, a_cutoff_min=None, a_cu
     # need to check if input parameters match anything in the OBJECT_TYPE_CUTOFFS dictionary
     for obj_type, cutoff_dict in OBJECT_TYPE_CUTOFFS.items(): # each "value" is also a dictionary
         match = True
-        if obj_type is not None: # for all types in OBJECT_TYPE_CUTOFFS that have a value
-            for parameter, value in cutoff_dict.items(): # param = a_cutoff_min, value = 50
-                current_param_check = input_params.get(parameter)
-                if current_param_check is not None: # checking if parameter has value in user inputs
-                    # now, need to check if input parameter matches criteria value
-                    # if min
-                    if parameter[-3:] == "min": #if parameter.endswith("min"):
-                        if current_param_check < value: # passes if >=
-                            match = False
-                            break
-                    else: # if not min
-                        if current_param_check > value: #passes if <=
-                            match = False
-                            break
-                else:
+        for parameter, value in cutoff_dict.items(): # param = a_cutoff_min, value = 50
+            current_param_check = input_params.get(parameter)
+            if current_param_check is None: # checking if parameter has value in user inputs
+                match = False
+                break
+                # now, need to check if input parameter matches criteria value
+                # if min
+            if parameter[-3:] == "min": #if parameter.endswith("min"):
+                if current_param_check < value: # passes if >=
+                    match = False
+                    break
+            else: # if not min
+                if current_param_check > value: #passes if <=
                     match = False
                     break
             if match is True:
                 return obj_type
-    return None
 
 def params_from_type(object_type):
     """
