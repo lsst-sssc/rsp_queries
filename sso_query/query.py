@@ -2,6 +2,7 @@
 # MPCORB 10-year data table
 from lsst.rsp import get_tap_service
 import matplotlib.pyplot as plt
+import pandas as pd
 
 #################### Global ####################
 OBJECT_TYPE_CUTOFFS = {
@@ -217,13 +218,15 @@ def calc_semimajor_axis(q, e):
 
     return q / (1.0 - e)
 
-def plot_data(data_table, object_type):
+def plot_data(data_table):
     """
     Function that creates  a vs. e, a vs. i plots using the returned data table from the original query.
     Args:
         data_table: Astropy table from query. 
-        object_type (str): String representing object type. 
     """
+    if object_type not in data_table.columns:
+        raise KeyError("object_type not a column.")
+    object_type = data_table['object_type'][0]
     
     # Orbital parameter plot (a vs e)
     fig, ax = plt.subplots()
@@ -251,33 +254,25 @@ def plot_data(data_table, object_type):
     ax.grid()
     plt.show()
 
+def add_object_type(data_table):
+    
+
 def type_counts(data_table):
-    # How many objects of each type? (Main-belt, NEOs, TNOs, Centaurs, JFCs, LPCs) 
-    df = data_table.to_pandas()
-
-    # counting MBAss
-    MBA_table = df[(df['a'] > 2.0) & (df['a'] < 3.2) & (df['q'] > 1.66)]
-    print(f"MBA Count: {len(MBA_table)}")
-
-    # counting NEOs
-    NEO_table = df[(df['q'] < 1.3) & (df['a'] > 4) & (df['e'] < 1)]
-    print(f"NEO Count: {len(NEO_table)}")
-
-    # counting TNOs
-    TNO_table = df[(df['a'] > 30.1) & (df['a'] < 50)]
-    print(f"TNO Count: {len(TNO_table)}")
-
-    # counting Centaurs
-    Cen_table = df[(df['a'] > 5.5) & (df['a'] < 30.1)]
-    print(f"Centaur Count: {len(Cen_table)}")
-
-    # # counting JFCs
-    # JFC_table = df[df['a'] > 30.1 & df['a'] < 50]
-    # print(f"TNO Count: {len(JFC_table)}")
-
-    # counting LPCs
-    LPC_table = df[(df['a'] > 50)]
-    print(f"LPC Count: {len(LPC_table)}")
+    """
+    Function returns the number of counts per unique object_type. 
+    Args:
+        data_table: Table of data with 'object_type' parameter. Can be pandas table or query result table. 
+    Returns:
+        counts: Pandas series containing counts of each unique value in 'object_type'. 
+    """
+    if isinstance(x, pd.DataFrame): #checks if the data table passed to counts is pandas
+        counts = data_table['object_type'].value_counts()
+    else:
+        df = data_table.to_pandas()
+        counts = df['object_type'].value_counts()
+    print(counts)
+    return counts
+    
 
 
 # def type_classification(row): #no JFCs returned because it's the same criteria as the TNOs
