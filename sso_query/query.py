@@ -67,7 +67,7 @@ def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cuto
     Returns:
         query: String representing query that can be passed to SSOtap.
     """
-    query_start = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband FROM dp03_catalogs_10yr.MPCORB as mpc"""
+    query_start = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc"""
 
     query = query_start
 
@@ -224,7 +224,7 @@ def plot_data(data_table):
     Args:
         data_table: Astropy table from query. 
     """
-    if object_type not in data_table.columns:
+    if "object_type" not in data_table.columns:
         raise KeyError("object_type not a column.")
     object_type = data_table['object_type'][0]
     
@@ -253,9 +253,6 @@ def plot_data(data_table):
     ax.minorticks_on()
     ax.grid()
     plt.show()
-
-def add_object_type(data_table):
-    
 
 def type_counts(data_table):
     """
