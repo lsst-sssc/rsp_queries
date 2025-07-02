@@ -9,7 +9,7 @@ OBJECT_TYPE_CUTOFFS = {
     "Centaur": {"a_cutoff_min": 5.5, "a_cutoff": 30.1},
     "TNO": {"a_cutoff_min": 30.1, "a_cutoff": 50},
     "Ntrojan": {"a_cutoff_min": 29.8, "a_cutoff": 30.4},
-    "NEO": {"q_cutoff": 1.3, "a_cutoff": 4, "e_cutoff": 1},
+    "NEO": {"q_cutoff": 1.3, "a_cutoff_min": 4.0, "e_cutoff": 1.0},
     "MBA": {"q_cutoff_min": 1.66, "a_cutoff_min": 2.0, "a_cutoff": 3.2},
     "Jtrojan": {"a_cutoff_min": 4.8, "a_cutoff": 5.4, "e_cutoff": 0.3},
 }
@@ -35,7 +35,14 @@ def make_query_general(object_type = None, q_cutoff_min = None, q_cutoff = None,
         
     if object_type is None: # if no object type assigned, need to get the object type and use the cutoffs given 
         query = make_query(q_cutoff_min, q_cutoff, e_cutoff_min, e_cutoff, a_cutoff, a_cutoff_min, join)
-        object_type = type_classification(q_cutoff_min, q_cutoff, e_cutoff_min, e_cutoff, a_cutoff, a_cutoff_min)
+        input_params = {
+        "q_cutoff_min": q_cutoff_min, 
+        "q_cutoff": q_cutoff, 
+        "a_cutoff_min": a_cutoff_min, 
+        "a_cutoff": a_cutoff, 
+        "e_cutoff_min": e_cutoff_min, 
+        "e_cutoff": e_cutoff}
+        object_type = type_classification(input_params = input_params)
         return query, object_type
 
     elif object_type in OBJECT_TYPE_CUTOFFS: #if object type is a valid type, need to get the cutoffs for that object type 
@@ -91,7 +98,7 @@ def make_query(q_cutoff_min = None, q_cutoff = None, e_cutoff_min = None, e_cuto
 
     return query
 
-def type_classification(object_type = None, q_cutoff_min = None, q_cutoff = None, a_cutoff_min = None, a_cutoff = None, e_cutoff_min = None, e_cutoff = None):
+def type_classification(object_type = None, input_params = None):
     """
     Function determines object type based on parameters or parameter based on object type. 
     This function's return objects depend on whether object_type is None:
@@ -101,12 +108,7 @@ def type_classification(object_type = None, q_cutoff_min = None, q_cutoff = None
         
     Args: (all optional)
         object_type (str): String representing object type. 
-        q_cutoff_min: Float representing the minimum distance at perihelion, in au.
-        q_cutoff: Float representing the max distance at perihelion, in au. 
-        e_cutoff_min: Float representing the minimum orbital eccentricity.
-        e_cutoff: Float representing the max orbital eccentricity. 
-        a_cutoff_min: Float representing the minimum semi-major axis of the orbit, in au.
-        a_cutoff: Float representing the max semi-major axis of the orbit, in au.
+        input_params: Dictionary containing each parameter (key) with user-input floats (value).
     Returns:
         if object_type is NOT PROVIDED: 
             object_type (str): String representing the type of object query looks for.
@@ -114,34 +116,21 @@ def type_classification(object_type = None, q_cutoff_min = None, q_cutoff = None
             params (dictionary of floats): Dictionary of floats corresponding to parameters of the specific object type. 
     """
     if object_type is None:
-        object_type = type_from_params(q_cutoff_min, q_cutoff, a_cutoff_min, a_cutoff, e_cutoff_min, e_cutoff)
+        object_type = type_from_params(input_params = input_params)
         return object_type
     else:
         params = params_from_type(object_type)
         return params
 
 
-def type_from_params(q_cutoff_min=None, q_cutoff = None, a_cutoff_min=None, a_cutoff=None, e_cutoff_min = None, e_cutoff=None):
+def type_from_params(input_params):
     """
     Function returns object type based on input parameters.
     Args:
-        q_cutoff_min: Float representing the minimum distance at perihelion, in au.
-        q_cutoff: Float representing the max distance at perihelion, in au. 
-        e_cutoff_min: Float representing the minimum orbital eccentricity.
-        e_cutoff: Float representing the max orbital eccentricity. 
-        a_cutoff_min: Float representing the minimum semi-major axis of the orbit, in au.
-        a_cutoff: Float representing the max semi-major axis of the orbit, in au.
+        input_params: Dictionary containing each parameter (key) with user-input floats (value).
     Returns:
         object_type (str): String representing the type of object query looks for. 
     """
-    input_params = {
-        "q_cutoff_min": q_cutoff_min, 
-        "q_cutoff": q_cutoff, 
-        "a_cutoff_min": a_cutoff_min, 
-        "a_cutoff": a_cutoff, 
-        "e_cutoff_min": e_cutoff_min, 
-        "e_cutoff": e_cutoff}
-
     # need to check if input parameters match anything in the OBJECT_TYPE_CUTOFFS dictionary
     for obj_type, cutoff_dict in OBJECT_TYPE_CUTOFFS.items(): # each "value" is also a dictionary
         match = True
