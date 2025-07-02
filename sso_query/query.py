@@ -9,7 +9,7 @@ OBJECT_TYPE_CUTOFFS = {
     "Centaur": {"a_cutoff_min": 5.5, "a_cutoff": 30.1},
     "TNO": {"a_cutoff_min": 30.1, "a_cutoff": 50},
     "Ntrojan": {"a_cutoff_min": 29.8, "a_cutoff": 30.4},
-    "NEO": {"q_cutoff": 1.3, "a_cutoff_min": 4.0, "e_cutoff": 1.0},
+    "NEO": {"q_cutoff": 1.3, "a_cutoff": 4.0, "e_cutoff": 1.0},
     "MBA": {"q_cutoff_min": 1.66, "a_cutoff_min": 2.0, "a_cutoff": 3.2},
     "Jtrojan": {"a_cutoff_min": 4.8, "a_cutoff": 5.4, "e_cutoff": 0.3},
 }
@@ -217,33 +217,38 @@ def calc_semimajor_axis(q, e):
 
     return q / (1.0 - e)
 
-def plot_data(data_table):
+def plot_data(data_table, object_type):
     """
     Function that creates  a vs. e, a vs. i plots using the returned data table from the original query.
     Args:
         data_table: Astropy table from query. 
+        object_type (str): String representing object type. 
     """
     
     # Orbital parameter plot (a vs e)
     fig, ax = plt.subplots()
     # plt.xlim([0., 4.])
     # plt.ylim([0., 1.])
+    ax.set_xscale('log')
     ax.scatter(data_table["a"], data_table["e"], s=0.1) # a vs. e
     ax.set_xlabel('semimajor axis (au)')
     ax.set_ylabel('eccentricity')
-    ax.set_title("a vs. e")
+    ax.set_title("a vs. e (" + object_type + ")")
     ax.minorticks_on()
+    ax.grid()
     plt.show()
 
     # Orbital parameter plot (a vs i)
     fig, ax = plt.subplots()
-    plt.xlim([0., 4.])
+    # plt.xlim([0., 4.])
     # plt.ylim([0., 1.])
+    ax.set_xscale('log')
     ax.scatter(data_table["a"], data_table["incl"], s=0.1) # a vs. i
     ax.set_xlabel('semimajor axis (au)')
     ax.set_ylabel('inclination (deg)')
-    ax.set_title("a vs. i")
+    ax.set_title("a vs. i (" + object_type + ")")
     ax.minorticks_on()
+    ax.grid()
     plt.show()
 
 def type_counts(data_table):
