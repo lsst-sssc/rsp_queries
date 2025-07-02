@@ -59,6 +59,7 @@ class TestQuery:
         query, object_type = make_query_general(object_type = "Ntrojan")
         assert expected_query == query
 
+    
     ############### params given, no join ###############
     def test_neos_params_no_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
@@ -69,8 +70,6 @@ class TestQuery:
 
         assert expected_query == query
         assert expected_object_type == object_type
-
-        # q < 1.3 au (a > 4, e < 1)
         
     def test_MBA_params_no_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
@@ -108,7 +107,6 @@ class TestQuery:
 
         assert expected_query == query
         assert expected_object_type == object_type
-
         
     def test_tno_params_no_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
@@ -119,8 +117,6 @@ class TestQuery:
 
         assert expected_query == query
         assert expected_object_type == object_type
-
-        # 5.5 au < a < 30.1 au
 
     def test_jtrojans_params_no_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
@@ -139,18 +135,8 @@ class TestQuery:
         query, object_type = make_query_general(a_cutoff_min = 29.8, a_cutoff = 30.4)
         assert expected_query == query
         assert expected_object_type == object_type
-        
 
-
-
-# Near-Earth Objects (NEOs)
-# Main-Belt Asteroids (MBAs)
-# Jupiter-Family Comets (JFCs)
-# Long-Period Comets (LPCs)
-# Centaurs
-# Trans-Neptunian Objects (TNOs)
-# Jupiter Trojans
-# Neptunian Trojans
+    
     ############### TYPE GIVEN, JOIN ###############
     def test_neo_type_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
