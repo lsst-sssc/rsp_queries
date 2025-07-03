@@ -281,6 +281,60 @@ def type_counts(data_table):
         counts = df['object_type'].value_counts()
     print(counts)
     return counts
+
+def mag_range_plot(data_table, number = 5):
+    """
+    Function plots magnitude ranges for the specified number of objects.
+        1. If number is None, all objects plotted. 
+    Args:
+        data_table: Pandas dataframe with values to plot.
+        number: Int representing the number of objects to plot. 
+    """
+    object_type = data_table['object_type'].iloc[0]
+    color_map = {
+    "NEO": "red",
+    "TNO": "blue",
+    "Centaur": "green",
+    "MBA": "orange",
+    "Jtrojan": "purple",
+    "LPC": "brown",
+    "Ntrojan": "pink"
+    }
+    color = color_map.get(object_type, "gray")  # fallback to 'gray' if type unknown
+    
+    if number is not None: # only filtering for the top number of values if number provided
+        top_srtd_filt_lrg_ranges = data_table.iloc[:number,:]
+        plot_title = "Top " + number + " Magnitude Ranges"
+    else:
+        top_srtd_filt_lrg_ranges = data_table
+        plot_title = "Magnitude Ranges"
+    
+    top_ranges = top_srtd_filt_lrg_ranges.copy()
+    top_ranges['y_spacing'] = range(1, len(top_ranges) + 1) 
+    # print(top_ranges) #degbugging
+    
+    # For the largest objects, want to visualize their ranges
+    fig, ax = plt.subplots()
+    ax.hlines(data = top_ranges, y = 'y_spacing', xmin = 'mag_min', xmax = 'mag_max', color = color, linewidth = 2, zorder = 2, label = object_type)
+    
+    # adding reference line
+    x_center = (top_ranges['mag_min'].min() + top_ranges['mag_max'].max()) / 2
+    xmin_ref = x_center - (np.mean(mag_range/2))
+    xmax_ref = x_center + (np.mean(mag_range/2))
+    ax.hlines(y = 0, xmin = xmin_ref, xmax = xmax_ref, color = "blue", linewidth = 2, label = "Mean Range")
+    sc = ax.scatter(data = top_ranges, x = 'mag_mean', y = 'y_spacing', s = 40, marker='o', edgecolors = "black", linewidth = 0.5, c='mag_mean', cmap = 'PiYG', zorder = 3, label = None)
+    cbar = fig.colorbar(sc, ax=ax)
+    cbar.set_label('Mean Magnitude (V)')
+    ax.set_xlabel('Magnitude Range (V)')
+    ax.set_ylabel('ssObject ID')
+    ax.set_title(plot_title)
+    ax.set_yticks(top_ranges['y_spacing'])
+    ax.set_yticklabels(top_ranges['ssObjectID'])
+    ax.minorticks_on()
+    ax.grid(zorder = 1)
+    plt.legend(loc="lower left")
+    plt.show()
+    
     
 
 # next steps: Nora doing SSObject
