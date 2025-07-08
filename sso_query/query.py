@@ -1,6 +1,8 @@
+from astropy.table import Table
+from IPython.display import display
 from lsst.rsp import get_tap_service
 import matplotlib.pyplot as plt
-import pandas as pd
+import numpy as np
 
 service = get_tap_service("ssotap")
 assert service is not None
@@ -72,8 +74,8 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
             raise ValueError("Invalid class_name.")
             
     cutoffs = {**default_cutoffs, **cutoffs}
-    
 
+    
     ### Join ###
     select_fields = ["mpc.incl", "mpc.q", "mpc.e", "mpc.ssObjectID", "mpc.mpcDesignation"]
     join_clause = ""
@@ -191,7 +193,43 @@ def run_query(query_string, to_pandas = False):
     return table
 
 
+def table(df, rows):
+    display(df.head(rows))
 
 
+def plots(df):
 
-    
+    a_min, a_max = np.percentile(df['a'], [0.5, 99.5])
+    e_min, e_max = np.percentile(df['e'], [0.5, 99.5])
+    i_min, i_max = np.percentile(df['incl'], [0.5, 99.5])
+
+    df_trimmed = df[(df['a'] >= a_min) & (df['a'] <= a_max) & (df['e'] >= e_min) & (df['e'] <= e_max) & (df['incl'] >= i_min) & (df['incl'] <= i_max)]
+
+    # Plot a vs. e
+    if 'a' in df.columns and 'e' in df.columns:
+        plt.figure(figsize=(7, 5))
+        plt.scatter(df_trimmed['a'], df_trimmed['e'], s=0.1, alpha=0.5)
+        plt.xlabel('Semi-major Axis (AU)')
+        plt.ylabel('Eccentricity')
+        plt.title('a vs. e')
+        plt.show()
+
+    # Plot a vs. incl
+    if 'a' in df.columns and 'incl' in df.columns:
+        plt.figure(figsize=(7, 5))
+        plt.scatter(df_trimmed['a'], df_trimmed['incl'], s=0.1, alpha=0.5)
+        plt.xlabel('Semi-major Axis (AU)')
+        plt.ylabel('Inclination')
+        plt.title('a vs. i')
+        plt.show()
+
+    # Plot color
+    if 'g_r_color' in df.columns and 'r_i_color' in df.columns:
+        plt.figure(figsize=(7, 5))
+        plt.scatter(df['g_r_color'], df['r_i_color'], s=1, alpha=0.5, c='steelblue')
+        plt.xlabel("g‒r")
+        plt.ylabel("r‒i")
+        plt.title("g‒r vs. r‒i")
+        plt.grid(True, ls="--", lw=0.5)
+        plt.tight_layout()
+        plt.show()

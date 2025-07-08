@@ -294,3 +294,13 @@ class TestQuery:
         query, object_type = make_query_general(a_cutoff_min = 29.8, a_cutoff = 30.4, join = 'Diasource')
         assert expected_query == query
         assert expected_object_type == object_type
+
+    
+    def test_join_SSObject_neos(self):
+        expected_query = f"""SELECT mpc.ssObjectId, mpc.mpcDesignation, mpc.e, mpc.q, mpc.incl, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB as mpc INNER JOIN dp03_catalogs_10yr.SSObject as sso ON mpc.ssObjectId = sso.ssObjectId WHERE mpc.q <= 1.3 AND mpc.e <= 1.0 AND mpc.q / (1 - mpc.e) <= 4.0 ORDER by mpc.mpcDesignation"""
+        
+        query_cutoffs = make_query('dp03_catalogs_10yr', cutoffs={'q_max': 1.3, 'e_max': 1.0, 'a_max': 4.0}, join_SSObject=True)
+        query_class = make_query('dp03_catalogs_10yr', 'neos', join_SSObject=True)
+
+        assert expected_query == query_cutoffs 
+        assert expected_query == query_class
