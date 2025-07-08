@@ -1,4 +1,3 @@
-# MPCORB 10-year data table
 from lsst.rsp import get_tap_service
 import matplotlib.pyplot as plt
 import pandas as pd
