@@ -1,453 +1,197 @@
-def classification(class_name):
+from lsst.rsp import get_tap_service
+import matplotlib.pyplot as plt
+import pandas as pd
+
+service = get_tap_service("ssotap")
+assert service is not None
+
+#################### Global ####################
+ORBITAL_CLASS_CUTOFFS = {
+    "LPC": {"a_min": 50.0},
+    "TNO": {"a_min": 30.1, "a_max": 50.0},
+    "Ntrojan": {"a_min": 29.8, "a_max": 30.4},
+    "NEO": {"q_max": 1.3, "a_max": 4.0, "e_max": 1.0},
+    "MBA": {"q_min": 1.66, "a_min": 2.0, "a_max": 3.2},
+    "Centaur": {"a_min": 5.5, "a_max": 30.1},
+    "Jtrojan": {"a_min": 4.8, "a_max": 5.4, "e_max": 0.3},
+    "JFC": {"tj_min": 2.0, "tj_max": 3.0}
+}
+################################################
+
+def make_query(catalog, class_name = None, cutoffs = None, join = None):
     """
-    Finds dynamical contraints of the orbital group given.
-    
+    Creates an MPCORB table query from the catalog based on either a class_name or cutoffs dict.
+    Creates a query from MPCORB 10-year table using the specificed catalog and class name OR cutoffs. Can join the MPCORB table with DiaSource or SSObject.
     Args:
-        class_name: Name of an orbital group/class (str).
+        catalog (str): Name of RSP catalog to query.
+        class_name = None (str) (optional): Name of orbital class.
+        cutoffs = None (dict) (optional): Dictionaryof  orbital constraints (keys, str) and desired/input values (values, floats). 
+        join = None (str) (optional): Table to join with MPCORB table. 
+            DiaSource, SSObject
     Returns:
-        cutoffs: Dictionary of dynamical constraints of the orbital group. 
+        query (str): Query string for the specified constraints.
+        class_name (str): Name of orbital class. Useful if orbital cutoff parameters provided. 
     """
-    valid_classes = ['lpcs', 'centaurs', 'tnos', 'neptunian trojans', 'jupiter trojans', 'mbas', 'neos']
-    if class_name.lower() not in valid_classes:
-        raise ValueError(f"Unknown orbital class: {class_name}")
+
+    ### Classification ###
+
+    # Errors #
+    if (class_name is None and cutoffs is None): # Class name and cutoffs not provided
+        raise ValueError("Please provide a class name ('class_name') OR desired orbital parameters ('cutoffs').")
+    if (class_name is not None and cutoffs is not None): # Both class name and cutoffs provided
+        raise ValueError("Provide exactly one of: 'class_name', 'cutoffs'.")
+        
+    default_cutoffs = {'q_min': None, 'q_max': None, 'e_min': None, 'e_max': None, 'a_min': None, 'a_max': None, 'tj_min': None, 'tj_max': None}
+
+    # Classification #
+    if cutoffs is not None: # given parameters, find object type #
+        cutoffs = {**default_cutoffs, **cutoffs} # user inputs cutoffs overlay default cutoffs
+        for class_type, cutoff_dict in ORBITAL_CLASS_CUTOFFS.items(): # each "value" is a dictionary
+            match = True
+            for parameter, value in cutoff_dict.items(): # Ex: parameter = a_min, value = 50.0
+                current_param_check = cutoffs.get(parameter) # cutoffs is user inputs, Ex: parameter = a_min, value = user input int
+                if current_param_check is None: # if parameter not defined by user
+                    match = False
+                    break
+                # know parameter is defined, checking compatability with known constraints
+                if parameter[-3:] == "min": #if parameter.endswith("min")
+                    if current_param_check < value: # passes if >=
+                        match = False
+                        break
+                else: # if not min
+                    if current_param_check > value: #passes if <=
+                        match = False
+                        break
+                if match is True:
+                    class_name = class_type
+                    
+    elif class_name is not None: # given a type, need to find parameters #
+        if class_name in ORBITAL_CLASS_CUTOFFS:
+            cutoffs = ORBITAL_CLASS_CUTOFFS[class_name]
+        else:
+            raise ValueError("Invalid class_name.")
+            
+    cutoffs = {**default_cutoffs, **cutoffs}
     
-    cutoffs = {'q_min': None, 'q_max': None, 'e_min': None, 'e_max': None, 'a_min': None, 'a_max': None}
 
-    # LPCs: a >= 50.0
-    if class_name.lower() == 'lpcs':
-        cutoffs['a_min'] = 50.0
-
-    # Centaurs: 5.5 < a < 30.1
-    elif class_name.lower() == 'centaurs':
-        cutoffs['a_min'] = 5.5
-        cutoffs['a_max'] = 30.1
-
-    # TNOs: 30.1 < a < 50
-    elif class_name.lower() == 'tnos':
-        cutoffs['a_min'] = 30.1
-        cutoffs['a_max'] = 50.0
-
-    # Neptunian Trojans: 29.8 < a < 30.4
-    elif class_name.lower() == 'neptunian trojans':
-        cutoffs['a_min'] = 29.8
-        cutoffs['a_max'] = 30.4
-    
-    # Jupiter Trojans: e < 0.3, 4.8 < a < 5.4
-    elif class_name.lower() == 'jupiter trojans':
-        cutoffs['e_max'] = 0.3
-        cutoffs['a_min'] = 4.8
-        cutoffs['a_max'] = 5.4
-
-    # MBAs: q > 1.66, 2.0 < a < 3.2
-    elif class_name.lower() == 'mbas':
-        cutoffs['q_min'] = 1.66
-        cutoffs['a_min'] = 2.0
-        cutoffs['a_max'] = 3.2
-
-    # NEOs: q < 1.3, e < 1.0, a > 4.0
-    elif class_name.lower() == 'neos':
-        cutoffs['q_max'] = 1.3
-        cutoffs['e_max'] = 1.0
-        cutoffs['a_min'] = 4.0
-
-    return cutoffs
-
-
-def make_query(class_name, join_SSObject=False):
-    """
-    Creates a query based on the dynamical constraints of the orbital group.
-    
-    Args:
-        class_name: Name of an orbital group/class (str).
-        join_SSObject (bool): Whether to join MPCORB and SSObject catalogs for query.
-    Returns:
-        query_end: Query string for objects of the given orbital group.
-    """
-    table_ref = "dp03_catalogs_10yr.MPCORB as mpc"
+    ### Join ###
+    select_fields = ["mpc.incl", "mpc.q", "mpc.e", "mpc.ssObjectID", "mpc.mpcDesignation"]
     join_clause = ""
-    select_fields = ["mpc.ssObjectId", "mpc.mpcDesignation", "mpc.e", "mpc.q", "mpc.incl"]
-    
-    if join_SSObject:
-        join_clause = " INNER JOIN dp03_catalogs_10yr.SSObject as sso ON mpc.ssObjectId = sso.ssObjectId"
-        select_fields += ["sso.g_H", "sso.r_H", "sso.i_H", "(sso.g_H - sso.r_H) AS g_r_color", "(sso.r_H - sso.i_H) AS r_i_color"]
 
-    start_query = f"""SELECT {', '.join(select_fields)} FROM {table_ref}{join_clause} WHERE """
-    cutoffs = classification(class_name)
+    # Adding selected fields from join table #
+    if join is not None:
+        # DiaSource join
+        if join == "DiaSource":
+            join_clause = f"""
+    INNER JOIN {catalog}.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId"""
+            try:
+                sso_results = service.search(f"SELECT column_name from TAP_SCHEMA.columns WHERE table_name = '{catalog}.DiaSource'")
+                sso_table = sso_results.to_table().to_pandas()
+                available_fields = sso_table['column_name'].tolist()
+            
+                desired_fields = ["dias.magTrueVband", "dias.band"]
+    
+                present_fields = [field for field in desired_fields if field.split(".")[1] in available_fields]
+                select_fields += present_fields
+
+                print(f"Querying {catalog}.DiaSource for: {present_fields}")
+                
+            except Exception as e:
+                print(f"{catalog} query failed, no schema of interest in catalog: {e}")
+
+        # SSObject join
+        elif join == "SSObject":
+            join_clause = f"""
+    INNER JOIN {catalog}.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId"""
+            try:
+                sso_results = service.search(f"SELECT column_name from TAP_SCHEMA.columns WHERE table_name = '{catalog}.SSObject'")
+                sso_table = sso_results.to_table().to_pandas()
+                available_fields = sso_table['column_name'].tolist()
+            
+                desired_fields = ["sso.g_H", "sso.r_H", "sso.i_H", "sso.discoverySubmissionDate", "sso.numObs"]
+    
+                present_fields = [field for field in desired_fields if field.split(".")[1] in available_fields]
+                select_fields += present_fields
+    
+                if "g_H" in available_fields and "r_H" in available_fields:
+                    select_fields.append("(sso.g_H - sso.r_H) AS g_r_color")
+                if "r_H" in available_fields and "i_H" in available_fields:
+                    select_fields.append("(sso.r_H - sso.i_H) AS r_i_color")
+                    
+                print(f"Querying {catalog}.SSObject for: {present_fields}")
+    
+            except Exception as e:
+                print(f"{catalog} query failed, no schema of interest in catalog: {e}")
+
+    ### Cutoff conditions ###
     conditions = []
-    
+
     if cutoffs['q_min'] is not None:
-        conditions.append(f"mpc.q >= {cutoffs['q_min']}")
+        conditions.append(f"mpc.q > {cutoffs['q_min']}")
     if cutoffs['q_max'] is not None:
-        conditions.append(f"mpc.q <= {cutoffs['q_max']}")
+        conditions.append(f"mpc.q < {cutoffs['q_max']}")
     if cutoffs['e_min'] is not None:
-        conditions.append(f"mpc.e >= {cutoffs['e_min']}")
+        conditions.append(f"mpc.e > {cutoffs['e_min']}")
     if cutoffs['e_max'] is not None:
-        conditions.append(f"mpc.e <= {cutoffs['e_max']}")
+        conditions.append(f"mpc.e < {cutoffs['e_max']}")
     if cutoffs['a_min'] is not None:
-        conditions.append(f"mpc.q/(1.0-mpc.e) >= {cutoffs['a_min']}")
+        conditions.append(f"mpc.q/(1-mpc.e) > {cutoffs['a_min']}")
     if cutoffs['a_max'] is not None:
-        conditions.append(f"mpc.q/(1.0-mpc.e) <= {cutoffs['a_max']}")
-    
-    where_clause = " AND ".join(conditions)
-    query_end = f"{start_query}{where_clause} ORDER BY mpc.mpcDesignation"
-    return query_end
+        conditions.append(f"mpc.q/(1-mpc.e) < {cutoffs['a_max']}")
+    if cutoffs['tj_min'] is not None and cutoffs['tj_max'] is not None:
+        conditions.append(f"(mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e)) >= 0")
+        conditions.append(f"(5.204 * (1 - mpc.e)) / mpc.q + 2 * COS(RADIANS(mpc.incl)) * SQRT((mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e))) BETWEEN {cutoffs['tj_min']} AND {cutoffs['tj_max']}")
 
 
-from astropy.table import Table
-from IPython.display import display
-from lsst.rsp import get_tap_service
-import matplotlib.pyplot as plt
-import numpy as np
+    ### Writing Query ###
+    query_start = f"SELECT {', '.join(select_fields)} FROM {catalog}.MPCORB AS mpc{join_clause}"
+    query_WHERE = f"""
+    WHERE"""
+    query = query_start + query_WHERE + " " + " AND ".join(conditions)
+    query = query + ";"
 
-service = get_tap_service("ssotap")
-assert service is not None
+    return query, class_name
 
-def run_query(class_name, join_SSObject=False, count_classes=False, show_table=False, show_plots=False, return_astropy=False, verbose=False):
+
+
+def run_query(query_string, to_pandas = False):
     """
-    Runs a TAP query on the ssotap service.
-
+    Function runs SSOtap using query_string. Default returns data in the form of an AstroPy Table. Returns with 'a' and 'class_name' columns.
     Args:
-        class_name: Name of an orbital group/class (str).
-        join_SSObject (bool): Whether to join MPCORB and SSObject catalogs for query.
-        count_classes (bool): Whether to print 
-        show_table (bool): Whether to print the resulting table (default: False).
-        show_plots (bool): Whether to generate basic diagnostic plots (default: False).
-        return_astropy (bool): If True, returns an Astropy Table instead of a pandas DataFrame.
-        verbose (bool): Whether to print statements that display information about the data in the catalog.
-    Returns:
-        Table or DataFrame: Query results as either an Astropy Table or pandas DataFrame.
+        query_string: String representing query to pass to SSOtap.
+        return_item: String representing the type of dataframe to return with queried data. 
+        to_pandas: Boolean representing whether or not to convert job results to pandas table. Default is an AstroPy table.
+    Returns: 
+        unique_objects: Data table with the job results. 
     """
-    query_string = make_query(class_name, join_SSObject=join_SSObject)
-    if verbose:
-        print(f"Running query:\n{query_string}\n")
+    # getting the Rubin tap service client 
+    service = get_tap_service("ssotap")
+    assert service is not None
     
+    # running the job
     job = service.submit_job(query_string)
     job.run()
     job.wait(phases=['COMPLETED', 'ERROR'])
+    print('Job phase is', job.phase)
     
-    if verbose:
-        print(f"Job phase is: {job.phase}\n")
-        assert job.phase == 'COMPLETED', "Query did not complete successfully."
+    # adding 'a' and 'class_name' columns
+    table = job.fetch_result().to_table().to_pandas()
+    a = q.calc_semimajor_axis(table['q'], table['e'])
+    table['a'] = a
+    table['class_name'] = class_name
 
-    result_table = job.fetch_result().to_table()
+    if to_pandas is False: #AstroPy table
+        unique_objects = table.to_table()
+        print(unique_objects[0:5]) # print first few rows 
+    else: #pandas table
+        unique_objects = table
+        print(unique_objects.head(5)) # print first five rows
+    assert job.phase == 'COMPLETED'
     
-    if 'q' in result_table.colnames and 'e' in result_table.colnames:
-        a_values = result_table['q'] / (1.0 - result_table['e'])
-        result_table['a'] = a_values
-        if verbose:
-            print("Added semi-major axis 'a' column to the table.\n")
-
-    if verbose:
-        print(f"Query returned {len(result_table)} rows.\n")
-        print("Columns in the result table:")
-        for col in result_table.colnames:
-            print(f"  - {col} ({result_table[col].dtype})")
-        print("\nFirst 5 rows:")
-        print(result_table[:5])
-        
-    df = result_table.to_pandas()
-
-    if count_classes:
-        counts = {}
-        print("\nClass count:")
-        counts[class_name] = len(df)
-        print(f"{class_name}: {counts[class_name]} objects\n")
-        
-        # class_list = ['LPCs', 'Centaurs', 'TNOs', 'Neptunian Trojans', 'Jupiter Trojans', 'MBAs', 'NEOs']
-        # for class_name in class_list:
-            # class_df = run_query(class_name, join_SSObject=join_SSObject, verbose=False)
-            # counts[class_name] = len(class_df)
-            # print(f"{class_name}: {counts[class_name]} objects")
-
-    if show_table:
-        display(df.head(50)) # Will nicely display the first 50 rows
-        
-    if show_plots:
-
-        # Avoid extreme outliers
-        df_plot = df[(df['a'] < 100) & (df['e'] < 1.0)]
-
-        # Scatter plot: a vs e (zoomed)
-        plt.figure(figsize=(7, 5))
-        plt.scatter(df_plot['a'], df_plot['e'], s=6, alpha=0.5)
-        plt.xlabel('a (AU)')
-        plt.ylabel('e')
-        plt.title('a vs e (zoomed)')
-        plt.grid(True, ls="--", lw=0.5)
-        plt.tight_layout()
-        plt.show()
-
-        # Scatter plot: a vs e (log scale)
-        plt.figure(figsize=(7, 5))
-        plt.scatter(df['a'], df['e'], s=6, alpha=0.5)
-        plt.xscale('log')
-        plt.xlabel('a (AU, log scale)')
-        plt.ylabel('e')
-        plt.title('a vs e (log scale)')
-        plt.grid(True, which="both", ls="--", lw=0.5)
-        plt.tight_layout()
-        plt.show()
-
-        # 2D Histogram: a vs e
-        plt.figure(figsize=(7, 5))
-        plt.hist2d(df_plot['a'], df_plot['e'], bins=(200, 200), cmap='plasma', cmin=1)
-        plt.xlabel('a (AU)')
-        plt.ylabel('e')
-        plt.title('Density of a vs e')
-        plt.colorbar(label='Number of objects')
-        plt.tight_layout()
-        plt.show()
-
-        # Scatter plot: a vs inclination (zoomed)
-        df_incl = df[df['a'] < 100]
-        plt.figure(figsize=(7, 5))
-        plt.scatter(df['a'], df['incl'], s=6, alpha=0.5)
-        plt.xlabel('a (AU)')
-        plt.ylabel('incl (deg)')
-        plt.title('a vs inclination (zoomed)')
-        plt.grid(True, ls="--", lw=0.5)
-        plt.tight_layout()
-        plt.show()
-        
-        # Scatter plot: a vs inclination (log scale)
-        plt.figure(figsize=(7, 5))
-        plt.scatter(df['a'], df['incl'], s=6, alpha=0.5)
-        plt.xscale('log')
-        plt.xlabel('a (AU, log scale)')
-        plt.ylabel('incl')
-        plt.title('a vs incl (log scale)')
-        plt.grid(True, which="both", ls="--", lw=0.5)
-        plt.tight_layout()
-        plt.show()
-
-        # 2D Histogram: a vs inclination
-        plt.figure(figsize=(7, 5))
-        plt.hist2d(df_plot['a'], df_plot['incl'], bins=(200, 200), cmap='plasma', cmin=1)
-        plt.xlabel('a (AU)')
-        plt.ylabel('incl')
-        plt.title('Density of a vs incl')
-        plt.colorbar(label='Number of objects')
-        plt.tight_layout()
-        plt.show()
-        
-        # Plot color if joined with SSObject
-        if 'g_r_color' in df.columns and 'r_i_color' in df.columns:            
-            plt.figure(figsize=(7, 5))
-            plt.scatter(df['g_r_color'], df['r_i_color'], s=8, alpha=0.6, c='steelblue')
-            plt.xlabel("g‒r")
-            plt.ylabel("r‒i")
-            plt.title("g‒r vs. r‒i")
-            plt.grid(True, ls="--", lw=0.5)
-            plt.tight_layout()
-            plt.show()
-
-    return result_table if return_astropy else df
+    return table
 
 
 
-# Possible idea: make this work for a list of classes 
-"""
-def classification(classes):
-    ""
-    Finds dynamical constraints for a list of orbital classes.
-
-    Args:
-        classes: List of class names (str).
-    Returns:
-        List of dicts, each representing the cutoffs for a class.
-    ""
-    valid_classes = ['lpcs', 'centaurs', 'tnos', 'neptunian trojans', 'jupiter trojans', 'mbas', 'neos']
-    all_cutoffs = []
-
-    for class_name in classes:
-        name = class_name.lower()
-        if name not in valid_classes:
-            raise ValueError(f"Unknown orbital class: {class_name}")
-        
-        cutoffs = {'class': class_name, 'q_min': None, 'q_max': None, 'e_min': None, 'e_max': None, 'a_min': None, 'a_max': None}
-
-        if name == 'lpcs':
-            cutoffs['a_min'] = 50.0
-        elif name == 'centaurs':
-            cutoffs['a_min'] = 5.5
-            cutoffs['a_max'] = 30.1
-        elif name == 'tnos':
-            cutoffs['a_min'] = 30.1
-            cutoffs['a_max'] = 50.0
-        elif name == 'neptunian trojans':
-            cutoffs['a_min'] = 29.8
-            cutoffs['a_max'] = 30.4
-        elif name == 'jupiter trojans':
-            cutoffs['e_max'] = 0.3
-            cutoffs['a_min'] = 4.8
-            cutoffs['a_max'] = 5.4
-        elif name == 'mbas':
-            cutoffs['q_min'] = 1.66
-            cutoffs['a_min'] = 2.0
-            cutoffs['a_max'] = 3.2
-        elif name == 'neos':
-            cutoffs['q_max'] = 1.3
-            cutoffs['e_max'] = 1.0
-            cutoffs['a_min'] = 4.0
-        
-        all_cutoffs.append(cutoffs)
-
-    return all_cutoffs
 
 
-def make_query(classes, join_SSObject=False):
-    ""
-    Creates a query to get objects matching any of the given classes.
-
-    Args:
-        classes: List of orbital class names.
-        join_SSObject (bool): Whether to join with SSObject catalog.
-    Returns:
-        SQL query string.
-    ""
-    table_ref = "dp03_catalogs_10yr.MPCORB as mpc"
-    join_clause = ""
-    select_fields = ["mpc.ssObjectId", "mpc.mpcDesignation", "mpc.e", "mpc.q", "mpc.incl"]
     
-    if join_SSObject:
-        join_clause = " INNER JOIN dp03_catalogs_10yr.SSObject as sso ON mpc.ssObjectId = sso.ssObjectId"
-        select_fields += [
-            "sso.g_H", "sso.r_H", "sso.i_H",
-            "(sso.g_H - sso.r_H) AS g_r_color",
-            "(sso.r_H - sso.i_H) AS r_i_color"
-        ]
-
-    start_query = f"SELECT {', '.join(select_fields)} FROM {table_ref}{join_clause} WHERE "
-    class_cutoffs = classification(classes)
-
-    or_conditions = []
-    for cut in class_cutoffs:
-        conds = []
-        if cut['q_min'] is not None:
-            conds.append(f"mpc.q >= {cut['q_min']}")
-        if cut['q_max'] is not None:
-            conds.append(f"mpc.q <= {cut['q_max']}")
-        if cut['e_min'] is not None:
-            conds.append(f"mpc.e >= {cut['e_min']}")
-        if cut['e_max'] is not None:
-            conds.append(f"mpc.e <= {cut['e_max']}")
-        if cut['a_min'] is not None:
-            conds.append(f"mpc.q / (1.0 - mpc.e) >= {cut['a_min']}")
-        if cut['a_max'] is not None:
-            conds.append(f"mpc.q / (1.0 - mpc.e) <= {cut['a_max']}")
-        if conds:
-            or_conditions.append("(" + " AND ".join(conds) + ")")
-
-    where_clause = " OR ".join(or_conditions)
-    query_end = f"{start_query}{where_clause} ORDER BY mpc.mpcDesignation"
-    return query_end
-
-from astropy.table import Table
-from lsst.rsp import get_tap_service
-import matplotlib.pyplot as plt
-
-service = get_tap_service("ssotap")
-assert service is not None
-
-def run_query(query_string, count_classes=False, show_table=False, show_plots=False, return_astropy=False, verbose=False):
-    ""
-    Runs a TAP query on the ssotap service.
-
-    Args:
-        query_string: The ADQL query string to run.
-        count_classes (bool): Whether to print 
-        show_table (bool): Whether to print the resulting table (default: False).
-        show_plots (bool): Whether to generate basic diagnostic plots (default: False).
-        return_astropy (bool): If True, returns an Astropy Table instead of a pandas DataFrame.
-        verbose (bool): Whether to print statements that display information about the data in the catalog.
-    Returns:
-        Table or DataFrame: Query results as either an Astropy Table or pandas DataFrame.
-    ""
-    if verbose:
-        print(f"Running query:\n{query_string}\n")
-    
-    job = service.submit_job(query_string)
-    job.run()
-    job.wait(phases=['COMPLETED', 'ERROR'])
-
-    print(f"Job phase is: {job.phase}\n")
-    assert job.phase == 'COMPLETED', "Query did not complete successfully."
-
-    result_table = job.fetch_result().to_table()
-    
-    if 'q' in result_table.colnames and 'e' in result_table.colnames:
-        a_values = result_table['q'] / (1.0 - result_table['e'])
-        result_table['a'] = a_values
-        if verbose:
-            print("Added semi-major axis 'a' column to the table.\n")
-
-    if verbose:
-        print(f"Query returned {len(result_table)} rows.\n")
-        print("Columns in the result table:")
-        for col in result_table.colnames:
-            print(f"  - {col} ({result_table[col].dtype})")
-        print("\nFirst 5 rows:")
-        print(result_table[:5])
-        
-    df = result_table.to_pandas()
-
-    if count_classes:
-        class_defs = classification(classes)
-        df['a'] = df['q'] / (1.0 - df['e'])
-
-        counts = {}
-        for cut in class_defs:
-            name = cut['class']
-            mask = pd.Series(True, index=df.index)
-            if cut['q_min'] is not None:
-                mask &= df['q'] >= cut['q_min']
-            if cut['q_max'] is not None:
-                mask &= df['q'] <= cut['q_max']
-            if cut['e_min'] is not None:
-                mask &= df['e'] >= cut['e_min']
-            if cut['e_max'] is not None:
-                mask &= df['e'] <= cut['e_max']
-            if cut['a_min'] is not None:
-                mask &= df['a'] >= cut['a_min']
-            if cut['a_max'] is not None:
-                mask &= df['a'] <= cut['a_max']
-            counts[name] = mask.sum()
-            print(f"{name}: {counts[name]} objects")
-
-    if show_table:
-        print(result_table)
-
-    if show_plots:
-
-        # Plot a vs. e
-        plt.figure(figsize=(6, 4))
-        plt.scatter(df['a'], df['e'], s=10, alpha=0.6)
-        plt.xlabel('a (AU)')
-        plt.ylabel('e')
-        plt.title('a vs e')
-        plt.grid(True)
-        plt.show()
-
-        # Plot a vs. i
-        plt.figure(figsize=(6, 4))
-        plt.scatter(df['a'], df['incl'], s=10, alpha=0.6)
-        plt.xlabel('a (AU)')
-        plt.ylabel('i (deg)')
-        plt.title('a vs i')
-        plt.grid(True)
-        plt.show()
-
-        # Plot color if joined with SSObject
-        if 'g_r_color' in df.columns and 'r_i_color' in df.columns:            
-            plt.figure(figsize=(8, 6))
-            plt.scatter(df['g_r_color'], df['r_i_color'], s=10, alpha=0.7, c='steelblue')
-            plt.xlabel("g‒r")
-            plt.ylabel("r‒i")
-            plt.title("g-r vs. r-i")
-            plt.grid(True)
-            plt.tight_layout()
-            plt.show()
-
-    return result_table if return_astropy else df
-
-"""

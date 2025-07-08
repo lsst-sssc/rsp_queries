@@ -7,9 +7,18 @@ authors = [
     { name = "Tim Lister", email = "tlister@lco.global"},
 ]
 dynamic = ["version"]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = [
-    "pytest"
+    "pytest",
+    "lsst-rsp"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipython",
+    "jupyter", # Clears output from Jupyter notebooks
+    "pytest",
+    "pytest-cov", # Used to report total code coverage
 ]
 
 [project.urls]
