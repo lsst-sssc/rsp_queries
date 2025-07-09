@@ -24,7 +24,7 @@ def build_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], calib_level=2) 
     Args:
         center (SkyCoord): Astropy SkyCoord of center to search
         bands (list, optional): List of bands to search. Defaults to ['g', 'r', 'i'].
-        calib_level (int, optional): calibration level of images to return. Defaults to 2 (visitImage)
+        calib_level (int, optional): calibration level of images to return. Defaults to 2 (visit_image)
 
     Returns:
         str: _description_ADQL query string

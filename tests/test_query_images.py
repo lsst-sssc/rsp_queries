@@ -41,19 +41,26 @@ def setup_base_query():
 
 @pytest.fixture
 def setup_band_query(setup_base_query):
-    expected_query = setup_base_query
-    expected_query += "AND (lsst_band = 'g' OR lsst_band = 'r' OR lsst_band = 'i')\n"
-    return expected_query
+    """Fixture which returns a callable to create resource with arguments."""
+    def _setup_band_query(band=None):
+        expected_query = setup_base_query
+        if band == 'r':
+            expected_query += "AND (lsst_band = 'r')\n"
+        else:
+            expected_query += "AND (lsst_band = 'g' OR lsst_band = 'r' OR lsst_band = 'i')\n"
+        return expected_query
+    return _setup_band_query
 
 @pytest.fixture
 def center():
     return SkyCoord(37.86, 6.98, unit='deg')
 
+
 def test_default_build_query(setup_band_query, center):
 
     query = build_query(center)
 
-    assert query == setup_band_query
+    assert query == setup_band_query()
 
 def test_build_query_no_bands(setup_base_query, center):
 
@@ -66,3 +73,17 @@ def test_build_query_empty_bands(setup_base_query, center):
     query = build_query(center, bands=[])
 
     assert query == setup_base_query
+
+def test_build_query_specific_band(setup_band_query, center):
+
+    query = build_query(center, bands=['r'])
+
+    r_query = setup_band_query('r')
+    assert query == r_query
+
+def test_build_query_specific_band_str(setup_band_query, center):
+
+    query = build_query(center, bands='r')
+
+    r_query = setup_band_query('r')
+    assert query == r_query
