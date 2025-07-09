@@ -2,11 +2,11 @@ import pytest
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
-from sso_query.query_images import check_rsp_access, build_query, make_query
+from sso_query.query_images import *
 
 def test_check_access(monkeypatch: pytest.MonkeyPatch) -> None:
     # Monkeypatch any potentially set environment variables (doesn't affect
-    # the users"s environment)
+    # the users's environment)
     monkeypatch.setenv("EXTERNAL_INSTANCE_URL", "https://shout.at.cloud.com/")
     monkeypatch.setenv("ACCESS_TOKEN", "gt-letmein")
     monkeypatch.setenv("TAP_ROUTE", "/api/tap")
@@ -15,7 +15,7 @@ def test_check_access(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_check_access_tap_url(monkeypatch: pytest.MonkeyPatch) -> None:
     # Monkeypatch any potentially set environment variables (doesn't affect
-    # the users"s environment)
+    # the users's environment)
     monkeypatch.setenv("EXTERNAL_TAP_URL", "https://shout.at.cloud.com/api/tap")
     monkeypatch.setenv("ACCESS_TOKEN", "gt-letmein")
 
@@ -23,7 +23,7 @@ def test_check_access_tap_url(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_check_no_access(monkeypatch: pytest.MonkeyPatch) -> None:
     # Monkeypatch any potentially set environment variables (doesn't affect
-    # the users"s environment)
+    # the users's environment)
     monkeypatch.setenv("EXTERNAL_INSTANCE_URL", "https://shout.at.cloud.com/")
     monkeypatch.setenv("ACCESS_TOKEN", "")
     monkeypatch.setenv("TAP_ROUTE", "/api/tap")
@@ -132,9 +132,33 @@ def test_build_query_mjd_floats_tmax_only(setup_time_query, center):
 
 def test_make_query_check_no_access(monkeypatch: pytest.MonkeyPatch, center) -> None:
     # Monkeypatch any potentially set environment variables (doesn't affect
-    # the users"s environment)
+    # the users's environment)
     monkeypatch.setenv("EXTERNAL_INSTANCE_URL", "https://shout.at.cloud.com/")
     monkeypatch.setenv("ACCESS_TOKEN", "")
     monkeypatch.setenv("TAP_ROUTE", "/api/tap")
 
     assert make_query(center) == None
+
+class TestParseDPUrl:
+
+    def test_blank(self):
+
+        filename = parse_dp_url("")
+        assert filename == ''
+
+    def test_none(self):
+
+        filename = parse_dp_url(None)
+        assert filename == ''
+
+    def test_visit_image(self):
+        url = 'https://storage.googleapis.com/butler-a-place/DM-1234/LSSTComCam/runs/DRP/DP1/DM-1234/visit_image/20240231/g/g_01/2024023142069/visit_image_LSSTComCam_g_g_01_2024023142069_R22_S00_LSSTComCam_runs_DRP_DP1_DM-1234.fits?AWSAccessKeyId=GOOG1Ekey&Signature=Wibble%3D&Expires=1752100277'
+
+        filename = parse_dp_url(url)
+        assert filename == 'visit_image_LSSTComCam_g_g_01_2024023142069_R22_S00_LSSTComCam_runs_DRP_DP1_DM-1234.fits'
+
+    def test_deep_coadd(self):
+        url = 'https://storage.googleapis.com/butler-a-place/DM-1234/LSSTComCam/runs/DRP/DP1/DM-1234/deep_coadd/12345/69/g/deep_coadd_12345_69_g_lsst_cells_v1_LSSTComCam_runs_DRP_DP1_DM-12345.fits?AWSAccessKeyId=GOOG1Ekey&Signature=Wibble%3D&Expires=1752100277'
+
+        filename = parse_dp_url(url)
+        assert filename == 'deep_coadd_12345_69_g_lsst_cells_v1_LSSTComCam_runs_DRP_DP1_DM-12345.fits'
