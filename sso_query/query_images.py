@@ -84,8 +84,9 @@ def make_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], t_min: float | T
     results = None
     if check_rsp_access():
         query = build_query(center, bands, t_min, t_max, calib_level)
-        print("Executing the following query:\n", query)
+        print(f"Executing the following query:\n{query}")
         service = get_tap_service("tap")
+        assert service is not None
         job = service.submit_job(query)
         job.run()
         job.wait(phases=['COMPLETED', 'ERROR'])
