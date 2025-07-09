@@ -1,306 +1,548 @@
-from sso_query.query import make_query_general
+from sso_query.query import make_query
 
-class TestQuery:
+# Class 1: TestQuery_DP03 - tests for catalog DP03. Type-join table is DiaSource, param-join table is ssObject.
+# Class 2: TestQuery_DP1 - tests for catalog DP1. Type-join table is ssObject, param-join table is DiaSource.
 
-    ############### type given, no join ###############
+
+
+class TestQuery_DP03:
+    ############### TYPE GIVEN, NO JOIN ###############
     def test_neo_type_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q < 1.3 AND mpc.e < 1.0 AND mpc.q/(1-mpc.e) < 4.0;"""
 
-        query, object_type = make_query_general(object_type = "NEO")
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "NEO")
         assert expected_query == query
 
     def test_MBA_type_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q > 1.66 AND mpc.q/(1-mpc.e) > 2.0 AND mpc.q/(1-mpc.e) < 3.2;"""
 
-        query, object_type = make_query_general(object_type = "MBA")
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "MBA")
         assert expected_query == query
 
     def test_jfc_type_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE (mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e)) >= 0 AND (5.204 * (1 - mpc.e)) / mpc.q + 2 * COS(RADIANS(mpc.incl)) * SQRT((mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e))) BETWEEN 2.0 AND 3.0;"""
 
-        query, object_type = make_query_general(object_type = "JFC")
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "JFC")
         assert expected_query == query
 
     def test_lpc_type_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
-    WHERE mpc.q/(1-mpc.e) > 50;"""
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 50.0;"""
 
-        query, object_type = make_query_general(object_type = "LPC")
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "LPC")
         assert expected_query == query
     
     def test_centaurs_type_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q/(1-mpc.e) > 5.5 AND mpc.q/(1-mpc.e) < 30.1;"""
 
-        query, object_type = make_query_general(object_type = "Centaur")
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "Centaur")
         assert expected_query == query
 
     def test_tno_type_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
-    WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50;"""
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50.0;"""
 
-        query, object_type = make_query_general(object_type = "TNO")
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "TNO")
         assert expected_query == query
 
     def test_jtrojan_type_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.e < 0.3 AND mpc.q/(1-mpc.e) > 4.8 AND mpc.q/(1-mpc.e) < 5.4;"""
 
-        query, object_type = make_query_general(object_type = "Jtrojan")
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "Jtrojan")
         assert expected_query == query
 
     def test_ntrojan_type_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q/(1-mpc.e) > 29.8 AND mpc.q/(1-mpc.e) < 30.4;"""
 
-        query, object_type = make_query_general(object_type = "Ntrojan")
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "Ntrojan")
         assert expected_query == query
 
-    
-    ############### params given, no join ###############
+
+
+
+    ############### PARAMS GIVEN, NO JOIN ###############
     def test_neos_params_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q < 1.3 AND mpc.e < 1.0 AND mpc.q/(1-mpc.e) < 4.0;"""
-        expected_object_type = "NEO"
+        expected_class_name = "NEO"
 
-        query, object_type = make_query_general(q_cutoff=1.3, a_cutoff=4.0, e_cutoff = 1.0)
+        cutoffs = {"q_max": 1.3, "a_max": 4.0, "e_max": 1.0}
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = None)
 
         assert expected_query == query
-        assert expected_object_type == object_type
-        
+        assert expected_class_name == class_name
+
     def test_MBA_params_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q > 1.66 AND mpc.q/(1-mpc.e) > 2.0 AND mpc.q/(1-mpc.e) < 3.2;"""
-        expected_object_type = "MBA"
+        expected_class_name = "MBA"
 
-        query, object_type = make_query_general(a_cutoff = 3.2, a_cutoff_min = 2.0, q_cutoff_min = 1.66)
+        cutoffs = {"q_min": 1.66, "a_min": 2.0, "a_max": 3.2}
+
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = None)
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
 
     def test_jfc_params_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE (mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e)) >= 0 AND (5.204 * (1 - mpc.e)) / mpc.q + 2 * COS(RADIANS(mpc.incl)) * SQRT((mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e))) BETWEEN 2.0 AND 3.0;"""
-        expected_object_type = "JFC"
+        expected_class_name = "JFC"
 
-        query, object_type = make_query_general(t_cutoff_min = 2.0, t_cutoff = 3.0)
+        cutoffs = {"tj_min": 2.0, "tj_max": 3.0}
+
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = None)
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
 
     def test_lpc_params_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
-    WHERE mpc.q/(1-mpc.e) > 50;"""
-        expected_object_type = "LPC"
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 50.0;"""
+        expected_class_name = "LPC"
 
-        query, object_type = make_query_general(a_cutoff_min = 50)
+        cutoffs = {"a_min": 50.0}
+
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = None)
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
         
     def test_centaurs_params_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q/(1-mpc.e) > 5.5 AND mpc.q/(1-mpc.e) < 30.1;"""
-        expected_object_type = "Centaur"
+        expected_class_name = "Centaur"
 
-        query, object_type = make_query_general(a_cutoff = 30.1, a_cutoff_min = 5.5)
+        cutoffs = {"a_min": 5.5, "a_max": 30.1}
+
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = None)
 
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
         
     def test_tno_params_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
-    WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50;"""
-        expected_object_type = "TNO"
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50.0;"""
+        expected_class_name = "TNO"
 
-        query, object_type = make_query_general(a_cutoff_min = 30.1, a_cutoff = 50)
+        cutoffs = {"a_min": 30.1, "a_max": 50.0}
+
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = None)
 
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
 
     def test_jtrojans_params_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.e < 0.3 AND mpc.q/(1-mpc.e) > 4.8 AND mpc.q/(1-mpc.e) < 5.4;"""
-        expected_object_type = "Jtrojan"
+        expected_class_name = "Jtrojan"
 
-        query, object_type = make_query_general(a_cutoff_min = 4.8, a_cutoff = 5.4, e_cutoff = 0.3)
+        cutoffs = {"a_min": 4.8, "a_max": 5.4, "e_max": 0.3}
+
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = None)
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
 
     def test_ntrojans_params_no_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q/(1-mpc.e) > 29.8 AND mpc.q/(1-mpc.e) < 30.4;"""
-        expected_object_type = "Ntrojan"
+        expected_class_name = "Ntrojan"
 
-        query, object_type = make_query_general(a_cutoff_min = 29.8, a_cutoff = 30.4)
+        cutoffs = {"a_min": 29.8, "a_max": 30.4}
+
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = None)
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
 
-    
-    ############### TYPE GIVEN, JOIN ###############
+
+
+    ############### TYPE GIVEN, JOIN: DiaSource ###############
     def test_neo_type_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
     WHERE mpc.q < 1.3 AND mpc.e < 1.0 AND mpc.q/(1-mpc.e) < 4.0;"""
 
-        query, object_type = make_query_general(object_type = "NEO", join = 'Diasource')
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "NEO", join = 'DiaSource')
         assert expected_query == query
 
     def test_MBA_type_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
     WHERE mpc.q > 1.66 AND mpc.q/(1-mpc.e) > 2.0 AND mpc.q/(1-mpc.e) < 3.2;"""
         
-        query, object_type = make_query_general(object_type = "MBA", join = 'Diasource')
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "MBA", join = 'DiaSource')
         assert expected_query == query
 
     def test_jfc_type_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
     WHERE (mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e)) >= 0 AND (5.204 * (1 - mpc.e)) / mpc.q + 2 * COS(RADIANS(mpc.incl)) * SQRT((mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e))) BETWEEN 2.0 AND 3.0;"""
 
-        query, object_type = make_query_general(object_type = "JFC", join = 'Diasource')
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "JFC", join = 'DiaSource')
         assert expected_query == query
 
     def test_lpc_type_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
-    WHERE mpc.q/(1-mpc.e) > 50;"""
+    WHERE mpc.q/(1-mpc.e) > 50.0;"""
 
-        query, object_type = make_query_general(object_type = "LPC", join = 'Diasource')
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "LPC", join = 'DiaSource')
         assert expected_query == query
 
     def test_centaur_type_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
     WHERE mpc.q/(1-mpc.e) > 5.5 AND mpc.q/(1-mpc.e) < 30.1;"""
 
-        query, object_type = make_query_general(object_type = "Centaur", join = 'Diasource')
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "Centaur", join = 'DiaSource')
         assert expected_query == query
 
     def test_tno_type_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
-    WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50;"""
+    WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50.0;"""
 
-        query, object_type = make_query_general(object_type = "TNO", join = 'Diasource')
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "TNO", join = 'DiaSource')
         assert expected_query == query
 
     def test_jtrojan_type_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
     WHERE mpc.e < 0.3 AND mpc.q/(1-mpc.e) > 4.8 AND mpc.q/(1-mpc.e) < 5.4;"""
 
-        query, object_type = make_query_general(object_type = "Jtrojan", join = 'Diasource')
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "Jtrojan", join = 'DiaSource')
         assert expected_query == query
 
     def test_ntrojan_type_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
     WHERE mpc.q/(1-mpc.e) > 29.8 AND mpc.q/(1-mpc.e) < 30.4;"""
 
-        query, object_type = make_query_general(object_type = "Ntrojan", join = 'Diasource')
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = "Ntrojan", join = 'DiaSource')
         assert expected_query == query
 
 
-    ############### PARAMS GIVEN, JOIN ###############
+
+
+    ############### PARAMS GIVEN, JOIN: SSObject ###############
     def test_neos_params_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
-    INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+    INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
     WHERE mpc.q < 1.3 AND mpc.e < 1.0 AND mpc.q/(1-mpc.e) < 4.0;"""
-        expected_object_type = "NEO"
+    
+        expected_class_name = "NEO"
 
-        query, object_type = make_query_general(q_cutoff=1.3, a_cutoff=4.0, e_cutoff = 1.0, join = 'Diasource')
+        cutoffs = {"q_max": 1.3, "a_max": 4.0, "e_max": 1.0}
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = 'SSObject')
 
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
 
-        # q < 1.3 au (a > 4, e < 1)
-        
     def test_MBA_params_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
-    INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+    INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
     WHERE mpc.q > 1.66 AND mpc.q/(1-mpc.e) > 2.0 AND mpc.q/(1-mpc.e) < 3.2;"""
-        expected_object_type = "MBA"
+        expected_class_name = "MBA"
 
-        query, object_type = make_query_general(a_cutoff = 3.2, a_cutoff_min = 2.0, q_cutoff_min = 1.66, join = 'Diasource')
+        cutoffs = {"q_min": 1.66, "a_min": 2.0, "a_max": 3.2}
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = 'SSObject')
+        
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
         
     def test_jfc_param_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
-    INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+    INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
     WHERE (mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e)) >= 0 AND (5.204 * (1 - mpc.e)) / mpc.q + 2 * COS(RADIANS(mpc.incl)) * SQRT((mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e))) BETWEEN 2.0 AND 3.0;"""
 
-        expected_object_type = "JFC"
+        expected_class_name = "JFC"
 
-        query, object_type = make_query_general(t_cutoff_min = 2.0, t_cutoff = 3.0, join = 'Diasource')
+        cutoffs = {"tj_min": 2.0, "tj_max": 3.0}
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = 'SSObject')
 
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
 
-    ####################
     def test_lpc_params_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
-    INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
-    WHERE mpc.q/(1-mpc.e) > 50;"""
-        expected_object_type = "LPC"
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+    INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
+    WHERE mpc.q/(1-mpc.e) > 50.0;"""
+        expected_class_name = "LPC"
 
-        query, object_type = make_query_general(a_cutoff_min = 50, join = 'Diasource')
+        cutoffs = {"a_min": 50.0}
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = 'SSObject')
+        
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
         
     def test_centaurs_params_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
-    INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+    INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
     WHERE mpc.q/(1-mpc.e) > 5.5 AND mpc.q/(1-mpc.e) < 30.1;"""
-        expected_object_type = "Centaur"
+        expected_class_name = "Centaur"
 
-        query, object_type = make_query_general(a_cutoff = 30.1, a_cutoff_min = 5.5, join = 'Diasource')
+        cutoffs = {"a_min": 5.5, "a_max": 30.1}
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = 'SSObject')
 
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
 
-        
     def test_tno_params_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
-    INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
-    WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50;"""
-        expected_object_type = "TNO"
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+    INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
+    WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50.0;"""
+        expected_class_name = "TNO"
 
-        query, object_type = make_query_general(a_cutoff_min = 30.1, a_cutoff = 50, join = 'Diasource')
+        cutoffs = {"a_min": 30.1, "a_max": 50.0}
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = 'SSObject')
 
         assert expected_query == query
-        assert expected_object_type == object_type
-
-        # 5.5 au < a < 30.1 au
+        assert expected_class_name == class_name
 
     def test_jtrojans_params_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
-    INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+    INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
     WHERE mpc.e < 0.3 AND mpc.q/(1-mpc.e) > 4.8 AND mpc.q/(1-mpc.e) < 5.4;"""
-        expected_object_type = "Jtrojan"
+        expected_class_name = "Jtrojan"
 
-        query, object_type = make_query_general(a_cutoff_min = 4.8, a_cutoff = 5.4, e_cutoff = 0.3, join = 'Diasource')
+        cutoffs = {"a_min": 4.8, "a_max": 5.4, "e_max": 0.3}
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = 'SSObject')
+        
         assert expected_query == query
-        assert expected_object_type == object_type
+        assert expected_class_name == class_name
 
     def test_ntrojans_params_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
-    INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+    INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
     WHERE mpc.q/(1-mpc.e) > 29.8 AND mpc.q/(1-mpc.e) < 30.4;"""
-        expected_object_type = "Ntrojan"
+        expected_class_name = "Ntrojan"
 
-        query, object_type = make_query_general(a_cutoff_min = 29.8, a_cutoff = 30.4, join = 'Diasource')
-        assert expected_query == query
-        assert expected_object_type == object_type
-
-    
-    def test_join_SSObject_neos(self):
-        expected_query = f"""SELECT mpc.ssObjectId, mpc.mpcDesignation, mpc.e, mpc.q, mpc.incl, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB as mpc INNER JOIN dp03_catalogs_10yr.SSObject as sso ON mpc.ssObjectId = sso.ssObjectId WHERE mpc.q <= 1.3 AND mpc.e <= 1.0 AND mpc.q / (1 - mpc.e) <= 4.0 ORDER by mpc.mpcDesignation"""
+        cutoffs = {"a_min": 29.8, "a_max": 30.4}
+        query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = 'SSObject')
         
-        query_cutoffs = make_query('dp03_catalogs_10yr', cutoffs={'q_max': 1.3, 'e_max': 1.0, 'a_max': 4.0}, join_SSObject=True)
-        query_class = make_query('dp03_catalogs_10yr', 'neos', join_SSObject=True)
+        assert expected_query == query
+        assert expected_class_name == class_name
 
-        assert expected_query == query_cutoffs 
-        assert expected_query == query_class
+
+
+
+class TestQuery_DP1:
+    ############### TYPE GIVEN, NO JOIN ###############
+    def test_DP1_neo_type_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q < 1.3 AND mpc.e < 1.0 AND mpc.q/(1-mpc.e) < 4.0;"""
+
+        query, class_name = make_query("dp1", class_name = "NEO")
+        assert expected_query == query
+
+    def test_DP1_MBA_type_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q > 1.66 AND mpc.q/(1-mpc.e) > 2.0 AND mpc.q/(1-mpc.e) < 3.2;"""
+
+        query, class_name = make_query("dp1", class_name = "MBA")
+        assert expected_query == query
+
+    def test_DP1_jfc_type_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE (mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e)) >= 0 AND (5.204 * (1 - mpc.e)) / mpc.q + 2 * COS(RADIANS(mpc.incl)) * SQRT((mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e))) BETWEEN 2.0 AND 3.0;"""
+
+        query, class_name = make_query("dp1", class_name = "JFC")
+        assert expected_query == query
+
+    def test_DP1_lpc_type_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 50.0;"""
+
+        query, class_name = make_query("dp1", class_name = "LPC")
+        assert expected_query == query
+    
+    def test_DP1_centaurs_type_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 5.5 AND mpc.q/(1-mpc.e) < 30.1;"""
+
+        query, class_name = make_query("dp1", class_name = "Centaur")
+        assert expected_query == query
+
+    def test_DP1_tno_type_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50.0;"""
+
+        query, class_name = make_query("dp1", class_name = "TNO")
+        assert expected_query == query
+
+    def test_DP1_jtrojan_type_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.e < 0.3 AND mpc.q/(1-mpc.e) > 4.8 AND mpc.q/(1-mpc.e) < 5.4;"""
+
+        query, class_name = make_query("dp1", class_name = "Jtrojan")
+        assert expected_query == query
+
+    def test_DP1_ntrojan_type_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 29.8 AND mpc.q/(1-mpc.e) < 30.4;"""
+
+        query, class_name = make_query("dp1", class_name = "Ntrojan")
+        assert expected_query == query
+
+
+
+    ############### PARAMS GIVEN, NO JOIN ###############
+    def test_DP1_neos_params_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q < 1.3 AND mpc.e < 1.0 AND mpc.q/(1-mpc.e) < 4.0;"""
+        expected_class_name = "NEO"
+
+        cutoffs = {"q_max": 1.3, "a_max": 4.0, "e_max": 1.0}
+        query, class_name = make_query("dp1", class_name = None, cutoffs = cutoffs, join = None)
+
+        assert expected_query == query
+        assert expected_class_name == class_name
+
+    def test_DP1_MBA_params_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q > 1.66 AND mpc.q/(1-mpc.e) > 2.0 AND mpc.q/(1-mpc.e) < 3.2;"""
+        expected_class_name = "MBA"
+
+        cutoffs = {"q_min": 1.66, "a_min": 2.0, "a_max": 3.2}
+
+        query, class_name = make_query("dp1", class_name = None, cutoffs = cutoffs, join = None)
+        assert expected_query == query
+        assert expected_class_name == class_name
+
+    def test_DP1_jfc_params_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE (mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e)) >= 0 AND (5.204 * (1 - mpc.e)) / mpc.q + 2 * COS(RADIANS(mpc.incl)) * SQRT((mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e))) BETWEEN 2.0 AND 3.0;"""
+        expected_class_name = "JFC"
+
+        cutoffs = {"tj_min": 2.0, "tj_max": 3.0}
+
+        query, class_name = make_query("dp1", class_name = None, cutoffs = cutoffs, join = None)
+        assert expected_query == query
+        assert expected_class_name == class_name
+
+    def test_DP1_lpc_params_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 50.0;"""
+        expected_class_name = "LPC"
+
+        cutoffs = {"a_min": 50.0}
+
+        query, class_name = make_query("dp1", class_name = None, cutoffs = cutoffs, join = None)
+        assert expected_query == query
+        assert expected_class_name == class_name
+        
+    def test_DP1_centaurs_params_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 5.5 AND mpc.q/(1-mpc.e) < 30.1;"""
+        expected_class_name = "Centaur"
+
+        cutoffs = {"a_min": 5.5, "a_max": 30.1}
+
+        query, class_name = make_query("dp1", class_name = None, cutoffs = cutoffs, join = None)
+
+        assert expected_query == query
+        assert expected_class_name == class_name
+        
+    def test_DP1_tno_params_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50.0;"""
+        expected_class_name = "TNO"
+
+        cutoffs = {"a_min": 30.1, "a_max": 50.0}
+
+        query, class_name = make_query("dp1", class_name = None, cutoffs = cutoffs, join = None)
+
+        assert expected_query == query
+        assert expected_class_name == class_name
+
+    def test_DP1_jtrojans_params_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.e < 0.3 AND mpc.q/(1-mpc.e) > 4.8 AND mpc.q/(1-mpc.e) < 5.4;"""
+        expected_class_name = "Jtrojan"
+
+        cutoffs = {"a_min": 4.8, "a_max": 5.4, "e_max": 0.3}
+
+        query, class_name = make_query("dp1", class_name = None, cutoffs = cutoffs, join = None)
+        assert expected_query == query
+        assert expected_class_name == class_name
+
+    def test_DP1_ntrojans_params_no_join(self):
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp1.MPCORB AS mpc
+    WHERE mpc.q/(1-mpc.e) > 29.8 AND mpc.q/(1-mpc.e) < 30.4;"""
+        expected_class_name = "Ntrojan"
+
+        cutoffs = {"a_min": 29.8, "a_max": 30.4}
+
+        query, class_name = make_query("dp1", class_name = None, cutoffs = cutoffs, join = None)
+        assert expected_query == query
+        assert expected_class_name == class_name
+
+
+# # WIP ###############################################################################################################
+#     ############### TYPE GIVEN, JOIN: SSObject ###############
+#     def test_DP1_neo_type_join(self):
+#         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp1.MPCORB AS mpc
+#     INNER JOIN dp1.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
+#     WHERE mpc.q < 1.3 AND mpc.e < 1.0 AND mpc.q/(1-mpc.e) < 4.0;"""
+
+#         query, class_name = make_query("dp1", class_name = "NEO", join = 'SSObject')
+#         assert expected_query == query
+
+#     def test_DP1_MBA_type_join(self):
+#         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+#     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
+#     WHERE mpc.q > 1.66 AND mpc.q/(1-mpc.e) > 2.0 AND mpc.q/(1-mpc.e) < 3.2;"""
+        
+#         query, class_name = make_query("dp1", class_name = "MBA", join = 'SSObject')
+#         assert expected_query == query
+
+#     def test_DP1_jfc_type_join(self):
+#         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+#     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
+#     WHERE (mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e)) >= 0 AND (5.204 * (1 - mpc.e)) / mpc.q + 2 * COS(RADIANS(mpc.incl)) * SQRT((mpc.q * (1 - mpc.e)) / (5.204 * (1 + mpc.e))) BETWEEN 2.0 AND 3.0;"""
+
+#         query, class_name = make_query("dp03_catalogs_10yr", class_name = "JFC", join = 'SSObject')
+#         assert expected_query == query
+
+#     def test_DP1_lpc_type_join(self):
+#         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+#     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
+#     WHERE mpc.q/(1-mpc.e) > 50.0;"""
+
+#         query, class_name = make_query("dp03_catalogs_10yr", class_name = "LPC", join = 'SSObject')
+#         assert expected_query == query
+
+#     def test_DP1_centaur_type_join(self):
+#         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+#     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
+#     WHERE mpc.q/(1-mpc.e) > 5.5 AND mpc.q/(1-mpc.e) < 30.1;"""
+
+#         query, class_name = make_query("dp03_catalogs_10yr", class_name = "Centaur", join = 'SSObject')
+#         assert expected_query == query
+
+#     def test_DP1_tno_type_join(self):
+#         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+#     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
+#     WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50.0;"""
+
+#         query, class_name = make_query("dp03_catalogs_10yr", class_name = "TNO", join = 'SSObject')
+#         assert expected_query == query
+
+#     def test_DP1_jtrojan_type_join(self):
+#         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+#     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
+#     WHERE mpc.e < 0.3 AND mpc.q/(1-mpc.e) > 4.8 AND mpc.q/(1-mpc.e) < 5.4;"""
+
+#         query, class_name = make_query("dp03_catalogs_10yr", class_name = "Jtrojan", join = 'SSObject')
+#         assert expected_query == query
+
+#     def test_DP1_ntrojan_type_join(self):
+#         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
+#     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
+#     WHERE mpc.q/(1-mpc.e) > 29.8 AND mpc.q/(1-mpc.e) < 30.4;"""
+
+#         query, class_name = make_query("dp03_catalogs_10yr", class_name = "Ntrojan", join = 'SSObject')
+#         assert expected_query == query
