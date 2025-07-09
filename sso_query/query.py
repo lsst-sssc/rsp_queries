@@ -156,13 +156,13 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
 
 
 
-def run_query(query_string, catalog, class_name, to_pandas = False):
+def run_query(query_string, class_name, catalog = "dp1", to_pandas = False):
     """
     Function runs SSOtap using query_string. Default returns data in the form of an AstroPy Table. Returns with 'a' and 'class_name' columns.
     Args:
         query_string (str): String representing query to pass to SSOtap.
-        catalog (str): String representing which catalog is being queried. 
         class_name (str): Name of class of objects within query. 
+        catalog = "dp1" (str)(optional): String representing which catalog is being queried. 
         to_pandas = False (bool) (optional): Boolean representing whether or not to convert job results to pandas table. Default is an AstroPy table.
     Returns: 
         unique_objects: Data table with the job results. 
@@ -188,7 +188,13 @@ def run_query(query_string, catalog, class_name, to_pandas = False):
 
     assert job.phase == 'COMPLETED'
     result = job.fetch_result()
-    
+
+    # Errors for table #
+    # Check if table has no values or is None
+    if result is None or len(result) == 0:
+        raise ValueError("Result table is empty or None. Check input cutoffs.")
+
+
     # turning results into pandas table
     # adding 'a' and 'class_name' columns
     table = pd.DataFrame(result)
