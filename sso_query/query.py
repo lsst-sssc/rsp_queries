@@ -1,6 +1,7 @@
 from lsst.rsp import get_tap_service
 import matplotlib.pyplot as plt
 import pandas as pd
+from astropy.table import Table
 
 service = get_tap_service("ssotap")
 assert service is not None
@@ -155,42 +156,68 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
 
 
 
-def run_query(query_string, to_pandas = False):
+def run_query(query_string, catalog, class_name, to_pandas = False):
     """
     Function runs SSOtap using query_string. Default returns data in the form of an AstroPy Table. Returns with 'a' and 'class_name' columns.
     Args:
-        query_string: String representing query to pass to SSOtap.
-        return_item: String representing the type of dataframe to return with queried data. 
-        to_pandas: Boolean representing whether or not to convert job results to pandas table. Default is an AstroPy table.
+        query_string (str): String representing query to pass to SSOtap.
+        catalog (str): String representing which catalog is being queried. 
+        class_name (str): Name of class of objects within query. 
+        to_pandas = False (bool) (optional): Boolean representing whether or not to convert job results to pandas table. Default is an AstroPy table.
     Returns: 
         unique_objects: Data table with the job results. 
     """
-    # getting the Rubin tap service client 
-    service = get_tap_service("ssotap")
-    assert service is not None
     
+    # getting the Rubin tap service client 
+    if catalog == "dp03_catalogs_10yr":
+        service = get_tap_service("ssotap") # 'tap' for DP03
+    elif catalog == "dp1":
+        service = get_tap_service("tap") # 'tap' for DP1
+    else:
+        raise ValueError("Please enter a valid catalog.")
+
+    assert service is not None
+
     # running the job
     job = service.submit_job(query_string)
     job.run()
     job.wait(phases=['COMPLETED', 'ERROR'])
     print('Job phase is', job.phase)
+    if job.phase == 'ERROR':
+        job.raise_if_error()
+
+    assert job.phase == 'COMPLETED'
+    result = job.fetch_result()
     
+    # turning results into pandas table
     # adding 'a' and 'class_name' columns
-    table = job.fetch_result().to_table().to_pandas()
-    a = q.calc_semimajor_axis(table['q'], table['e'])
+    table = pd.DataFrame(result)
+    a = calc_semimajor_axis(table['q'], table['e'])
     table['a'] = a
     table['class_name'] = class_name
 
     if to_pandas is False: #AstroPy table
-        unique_objects = table.to_table()
-        print(unique_objects[0:5]) # print first few rows 
+        table = Table.from_pandas(table)
+        print(table[0:5]) # print first few rows 
     else: #pandas table
-        unique_objects = table
-        print(unique_objects.head(5)) # print first five rows
-    assert job.phase == 'COMPLETED'
+        print(table.head(5)) # print first five rows
     
     return table
 
+
+def calc_semimajor_axis(q, e):
+    """
+    Given a perihelion distance and orbital eccentricity,
+    calculate the semi-major axis of the orbit.
+    Args: 
+        q (ndarray): Distance at perihelion, in au.
+        e (ndarray): Orbital eccentricity.
+
+    Returns:
+        a (ndarray): Semi-major axis of the orbit, in au. Dervied from: q = a(1-e), so a = q/(1-e)
+    """
+    
+    return q / (1.0 - e)
 
 
 
