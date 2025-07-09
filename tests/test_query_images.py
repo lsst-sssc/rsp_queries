@@ -33,7 +33,7 @@ def test_check_no_access(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def setup_base_query():
     expected_query = "SELECT lsst_visit, lsst_detector, lsst_tract, lsst_patch, lsst_band,"\
-            "s_ra, s_dec, t_min, t_max, s_region\n" \
+            "s_ra, s_dec, t_min, t_max, s_region, access_url\n" \
         "FROM ivoa.ObsCore\n" \
         "WHERE calib_level = 2\n" \
         "AND CONTAINS(POINT('ICRS', 37.86,6.98), s_region) = 1\n"
@@ -128,3 +128,13 @@ def test_build_query_mjd_floats_tmax_only(setup_time_query, center):
     query = build_query(center, t_max=60646.09)
 
     assert query == setup_time_query.replace('AND t_min > 60646.04', '')
+
+
+def test_make_query_check_no_access(monkeypatch: pytest.MonkeyPatch, center) -> None:
+    # Monkeypatch any potentially set environment variables (doesn't affect
+    # the users"s environment)
+    monkeypatch.setenv("EXTERNAL_INSTANCE_URL", "https://shout.at.cloud.com/")
+    monkeypatch.setenv("ACCESS_TOKEN", "")
+    monkeypatch.setenv("TAP_ROUTE", "/api/tap")
+
+    assert make_query(center) == None
