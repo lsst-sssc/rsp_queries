@@ -62,9 +62,10 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
                     if current_param_check > value: #passes if <=
                         match = False
                         break
-                if match is True:
-                    class_name = class_type
-                    
+            if match is True: #breaks if all conditions match a 
+                class_name = class_type
+                break
+
     elif class_name is not None: # given a type, need to find parameters #
         if class_name in ORBITAL_CLASS_CUTOFFS:
             cutoffs = ORBITAL_CLASS_CUTOFFS[class_name]
