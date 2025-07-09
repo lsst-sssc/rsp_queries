@@ -1,11 +1,11 @@
 from sso_query.query import make_query
 
-# Class 1: TestQuery_DP01 - tests for catalog DP01. Type-join table is DiaSource, param-join table is ssObject.
+# Class 1: TestQuery_DP03 - tests for catalog DP03. Type-join table is DiaSource, param-join table is ssObject.
 # Class 2: TestQuery_DP1 - tests for catalog DP1. Type-join table is ssObject, param-join table is DiaSource.
 
 
 
-class TestQuery_DP01:
+class TestQuery_DP03:
     ############### TYPE GIVEN, NO JOIN ###############
     def test_neo_type_no_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
