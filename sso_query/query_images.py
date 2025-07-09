@@ -1,3 +1,4 @@
+from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from lsst.rsp.utils import get_service_url, get_access_token
 
@@ -18,17 +19,19 @@ def check_rsp_access(dbg=False):
             access_good = False
     return access_good
 
-def build_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], calib_level=2) -> str:
+def build_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], t_min: float | Time | None = None,
+                 t_max: float | Time | None = None, calib_level=2) -> str:
     """Build the ADQL query to search ivoa.ObsCore for images
 
     Args:
         center (SkyCoord): Astropy SkyCoord of center to search
         bands (list, optional): List of bands to search. Defaults to ['g', 'r', 'i'].
         calib_level (int, optional): calibration level of images to return. Defaults to 2 (visit_image)
+        t_min (float, Time; optional): minimum time of images; either a MJD in TAI float or a Time object
+        t_max (float, Time; optional): maximum time of images; either a MJD in TAI float or a Time object
 
     Returns:
-        str: _description_ADQL query string
-    """    """
+        str: ADQL query string for RSP
     """
 
     query = "SELECT lsst_visit, lsst_detector, lsst_tract, lsst_patch, lsst_band," \
@@ -42,6 +45,25 @@ def build_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], calib_level=2) 
         bands_clause = " OR ".join([f"lsst_band = '{band}'" for band in bands])
         bands_clause = f"AND ({bands_clause})\n"
     query += bands_clause
+    time_clause = ""
+    print("t_min, t_max=", t_min, t_max)
+    if t_min is not None:
+        if isinstance(t_min, float):
+            # Try and turn the float into a Time object. MJD input and TAI timescale assumed.
+            time_min = Time(t_min, format='mjd', scale='tai')
+        else:
+            time_min = t_min
+        time_clause = f"AND t_min > {time_min.tai.mjd}"
+    if t_max is not None:
+        if isinstance(t_max, float):
+            # Try and turn the float into a Time object. MJD input and TAI timescale assumed.
+            time_max = Time(t_max, format='mjd', scale='tai')
+        else:
+            time_max = t_max
+        time_clause += f" AND t_max < {time_max.tai.mjd}"
+    if time_clause != "":
+        time_clause += "\nORDER BY t_min ASC\n"
+    query += time_clause
 
     return query
 

@@ -1,4 +1,5 @@
 import pytest
+from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
 from sso_query.query_images import check_rsp_access, build_query, make_query
@@ -52,6 +53,13 @@ def setup_band_query(setup_base_query):
     return _setup_band_query
 
 @pytest.fixture
+def setup_time_query(setup_band_query):
+    expected_query = setup_band_query()
+    expected_query += "AND t_min > 60646.04 AND t_max < 60646.09\nORDER BY t_min ASC\n"
+
+    return expected_query
+
+@pytest.fixture
 def center():
     return SkyCoord(37.86, 6.98, unit='deg')
 
@@ -87,3 +95,36 @@ def test_build_query_specific_band_str(setup_band_query, center):
 
     r_query = setup_band_query('r')
     assert query == r_query
+
+def test_build_query_mjd_floats(setup_time_query, center):
+
+    query = build_query(center, t_min=60646.04, t_max=60646.09)
+
+    assert query == setup_time_query
+
+def test_build_query_mjd_times(setup_time_query, center):
+
+    query = build_query(center, t_min=Time(60646.04, format='mjd', scale='tai'),
+                         t_max=Time(60646.09, format='mjd', scale='tai'))
+
+    assert query == setup_time_query
+
+def test_build_query_mjd_times_utc(setup_time_query, center):
+    TAI_UTC = 37/86400.0 # No. of leapseconds + offset between UTC and TAI in days (https://www.nist.gov/pml/time-and-frequency-division/time-realization/leap-seconds)
+
+    query = build_query(center, t_min=Time(60646.04-TAI_UTC, format='mjd', scale='utc'),
+                         t_max=Time(60646.09-TAI_UTC, format='mjd', scale='utc'))
+
+    assert query == setup_time_query
+
+def test_build_query_mjd_floats_tmin_only(setup_time_query, center):
+
+    query = build_query(center, t_min=60646.04)
+
+    assert query == setup_time_query.replace(' AND t_max < 60646.09', '')
+
+def test_build_query_mjd_floats_tmax_only(setup_time_query, center):
+
+    query = build_query(center, t_max=60646.09)
+
+    assert query == setup_time_query.replace('AND t_min > 60646.04', '')
