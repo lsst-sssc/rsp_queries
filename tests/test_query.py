@@ -1,8 +1,14 @@
+import pytest
+from lsst.rsp.utils import get_access_token
 from sso_query.query import make_query
+
+# Custom skipif marker to figure out whether tests are being run in RSP or with token set
+needs_rsp_access = pytest.mark.skipif(
+    get_access_token().startswith('gt-') is False, reason="Needs RSP access"
+)
 
 # Class 1: TestQuery_DP03 - tests for catalog DP03. Type-join table is DiaSource, param-join table is ssObject.
 # Class 2: TestQuery_DP1 - tests for catalog DP1. Type-join table is ssObject, param-join table is DiaSource.
-
 
 
 class TestQuery_DP03:
@@ -160,6 +166,7 @@ class TestQuery_DP03:
 
 
     ############### TYPE GIVEN, JOIN: DiaSource ###############
+    @needs_rsp_access
     def test_neo_type_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
