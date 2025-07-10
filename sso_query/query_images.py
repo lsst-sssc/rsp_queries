@@ -1,13 +1,16 @@
 import os
+import io
 from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
 import numpy as np
+import astropy.units as u
+from astropy.io import fits
 from astropy.time import Time
-from astropy.table import Table
+from astropy.table import Table, Row
 from astropy.coordinates import SkyCoord
-from pyvo.dal.adhoc import DatalinkResults
+from pyvo.dal.adhoc import DatalinkResults, SodaQuery
 
 from lsst.rsp import get_tap_service
 from lsst.rsp.utils import get_service_url, get_access_token, get_pyvo_auth, format_bytes
@@ -170,3 +173,36 @@ def download_data(results: Table, output_directory:str | Path, actually_download
         print("No 'access_url' column found in results table")
 
     return dl_files
+
+def get_image_cutout(image_result: Row, center: SkyCoord, radius: u.Unit) -> fits.HDUList | None:
+    """Produces a FITS image cutout from the image result given in <image_result> at
+    the specified <center> with square edges equal to 2 x <radius>.
+    The `center` is not checked to see whether it's within the `image_result['s_region']`
+    POLYGON bounds (but potentially could be..)
+
+
+    Args:
+        image_result (Row): A Row from a Table of results representing the image to cutout from
+        center (SkyCoord): Astropy SkyCoord of center of cutout
+        radius (u.Unit; transformable to degrees): radius of cutout. The resulting
+        cutout is always a square, with an edge size that is the same as the circle's
+        diameter.
+
+    Returns:
+        fits.HDUList: a FITS HDUList of the image cutout (or None in case of error)
+    """
+    hdulist = None
+    # Retrieve datalink. XXX same code as above, refactor
+    datalink_url = image_result['access_url']
+    dl_result = DatalinkResults.from_result_url(datalink_url, session=get_pyvo_auth())
+    if dl_result.status[0] == 'OK':
+        # Make SODA query object from the 'cutout-sync' service definition
+        sq = SodaQuery.from_resource(dl_result,
+                                     dl_result.get_adhocservice_by_id("cutout-sync"),
+                                     session=get_pyvo_auth())
+        # Set circle query property (which actually returns a square <sigh/shrug>...)
+        sq.circle = (center.ra.deg, center.dec.deg, radius.to(u.deg).value)
+        cutout_bytes = sq.execute_stream().read()
+        if len(cutout_bytes) > 0: # Also check if integer multiple of 2880 bytes?
+            hdulist = fits.open(io.BytesIO(cutout_bytes))
+    return hdulist
