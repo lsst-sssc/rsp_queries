@@ -206,3 +206,39 @@ def get_image_cutout(image_result: Row, center: SkyCoord, radius: u.Unit) -> fit
         if len(cutout_bytes) > 0: # Also check if integer multiple of 2880 bytes?
             hdulist = fits.open(io.BytesIO(cutout_bytes))
     return hdulist
+
+def display_image(datalink_url: str, backend: str = 'firefly'):
+    """Download and display the image pointed at `datalink_url` e.g. from the
+    'access_url' of a results table row:
+        display_image(results[0]['access_url'])
+
+    Args:
+        datalink_url (str): A DataLink URL to the image
+        backend (str): The backend to use for the `afwDisplay` display (Optional: 'firefly' (default) or 'matplotlib')
+
+    Returns:
+        d: Display object (either a `afwDisplay` or a `pyds9.DS9` object)
+    """
+    # XXX Should be refactored into image fetching and image displaying methods
+    dl_result = DatalinkResults.from_result_url(datalink_url, session=get_pyvo_auth())
+    dl_record = dl_result.getrecord(0)
+    image_url = dl_record.get('access_url', None)
+    try:
+        import lsst.afw.display as afwDisplay
+        from lsst.afw.image import ExposureF
+        afwDisplay.setDefaultBackend(backend)
+        afw_display = afwDisplay.Display(frame=1)
+        visit_image = ExposureF(image_url)
+        afw_display.image(visit_image)
+        afw_display.setMaskTransparency(100)
+        display = afw_display
+    except ImportError:
+        import pyds9
+        from astropy.io import fits
+        d = pyds9.DS9()
+        visit_image = fits.open(image_url)
+        d.set_pyfits(visit_image)
+        d.set('scale zscale')
+        d.set('zoom to fit')
+        display = d
+    return d
