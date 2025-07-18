@@ -60,18 +60,18 @@ def build_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], t_min: float | 
     query += bands_clause
     time_clause = ""
     if t_min is not None:
-        if isinstance(t_min, float):
-            # Try and turn the float into a Time object. MJD input and TAI timescale assumed.
-            time_min = Time(t_min, format='mjd', scale='tai')
-        else:
+        if isinstance(t_min, Time):
             time_min = t_min
+        else:
+            # Try and turn the passed `t_min` into a Time object. MJD input and TAI timescale assumed.
+            time_min = Time(t_min, format='mjd', scale='tai')
         time_clause = f"AND t_min > {time_min.tai.mjd}"
     if t_max is not None:
-        if isinstance(t_max, float):
-            # Try and turn the float into a Time object. MJD input and TAI timescale assumed.
-            time_max = Time(t_max, format='mjd', scale='tai')
-        else:
+        if isinstance(t_max, Time):
             time_max = t_max
+        else:
+            # Try and turn the passed `t_max` into a Time object. MJD input and TAI timescale assumed.
+            time_max = Time(t_max, format='mjd', scale='tai')
         time_clause += f" AND t_max < {time_max.tai.mjd}"
     if time_clause != "":
         time_clause += "\nORDER BY t_min ASC\n"

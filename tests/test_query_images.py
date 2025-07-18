@@ -60,6 +60,13 @@ def setup_time_query(setup_band_query):
     return expected_query
 
 @pytest.fixture
+def setup_time_query_int(setup_band_query):
+    expected_query = setup_band_query()
+    expected_query += "AND t_min > 60646.0 AND t_max < 60646.0\nORDER BY t_min ASC\n"
+
+    return expected_query
+
+@pytest.fixture
 def center():
     return SkyCoord(37.86, 6.98, unit='deg')
 
@@ -101,6 +108,12 @@ def test_build_query_mjd_floats(setup_time_query, center):
     query = build_query(center, t_min=60646.04, t_max=60646.09)
 
     assert query == setup_time_query
+
+def test_build_query_mjd_ints(setup_time_query_int, center):
+
+    query = build_query(center, t_min=60646, t_max=60646)
+
+    assert query == setup_time_query_int
 
 def test_build_query_mjd_times(setup_time_query, center):
 
