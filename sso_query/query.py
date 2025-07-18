@@ -2,10 +2,7 @@ from lsst.rsp import get_tap_service
 import matplotlib.pyplot as plt
 import pandas as pd
 from astropy.table import Table
-
-service = get_tap_service("ssotap")
-assert service is not None
-
+import numpy as np
 #################### Global ####################
 ORBITAL_CLASS_CUTOFFS = {
     "LPC": {"a_min": 50.0},
@@ -41,8 +38,18 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
         raise ValueError("Please provide a class name ('class_name') OR desired orbital parameters ('cutoffs').")
     if (class_name is not None and cutoffs is not None): # Both class name and cutoffs provided
         raise ValueError("Provide exactly one of: 'class_name', 'cutoffs'.")
+
+    if (catalog != "dp03_catalogs_10yr" and catalog != "dp1"):
+        raise ValueError("Invalid catalog name provided. Choose between 'dp03_catalogs_10yr' and 'dp1'.")
         
     default_cutoffs = {'q_min': None, 'q_max': None, 'e_min': None, 'e_max': None, 'a_min': None, 'a_max': None, 'tj_min': None, 'tj_max': None}
+
+    if catalog == "dp03_catalogs_10yr":
+        service = get_tap_service("ssotap")
+        assert service is not None
+    elif catalog == "dp1":
+        service = get_tap_service("tap")
+        assert service is not None
 
     # Classification #
     if cutoffs is not None: # given parameters, find object type #
@@ -90,8 +97,11 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
                 sso_results = service.search(f"SELECT column_name from TAP_SCHEMA.columns WHERE table_name = '{catalog}.DiaSource'")
                 sso_table = sso_results.to_table().to_pandas()
                 available_fields = sso_table['column_name'].tolist()
-            
-                desired_fields = ["dias.magTrueVband", "dias.band"]
+
+                if catalog == "dp03_catalogs_10yr":
+                    desired_fields = ["dias.magTrueVband", "dias.band"]
+                elif catalog == "dp1":
+                    desired_fields = ["dias.apFlux", "dias.apFlux_flag", "dias.apFluxErr", "dias.band"]
     
                 present_fields = [field for field in desired_fields if field.split(".")[1] in available_fields]
                 select_fields += present_fields
@@ -109,8 +119,11 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
                 sso_results = service.search(f"SELECT column_name from TAP_SCHEMA.columns WHERE table_name = '{catalog}.SSObject'")
                 sso_table = sso_results.to_table().to_pandas()
                 available_fields = sso_table['column_name'].tolist()
-            
-                desired_fields = ["sso.g_H", "sso.r_H", "sso.i_H", "sso.discoverySubmissionDate", "sso.numObs"]
+
+                if catalog == "dp03_catalogs_10yr":
+                    desired_fields = ["sso.g_H", "sso.r_H", "sso.i_H", "sso.discoverySubmissionDate", "sso.numObs"]
+                elif catalog == "dp1":
+                    desired_fields = ["sso.discoverySubmissionDate", "sso.numObs"]
     
                 present_fields = [field for field in desired_fields if field.split(".")[1] in available_fields]
                 select_fields += present_fields
@@ -225,6 +238,16 @@ def calc_semimajor_axis(q, e):
     
     return q / (1.0 - e)
 
+def calc_magnitude(apFlux):
+    """
+    Given a difference image flux, calculates the magnitude. 
+    Args:
+        apFlux (ndarray): Flux. 
+    Returns:
+        mags (ndarray): Converted magnitudes.
+    """
+    return -2.5 * np.log10(apFlux) + 31.4
+    
 
 
 
