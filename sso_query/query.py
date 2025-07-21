@@ -1,3 +1,5 @@
+# Module holds functions for creating/running queries; and adding key columns to results table. 
+
 from lsst.rsp import get_tap_service
 import matplotlib.pyplot as plt
 import pandas as pd
