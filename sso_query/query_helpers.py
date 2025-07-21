@@ -1,11 +1,28 @@
 # Module holds functions for post-run plotting + summarization. 
 
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
 ##### Post-run data wrangling #####
-def plot_data(data_table):
+def combine_tables(df1, df2):
+    """
+    Function vertically concatenates two dataframes. Useful for combining data tables of different types.
+    Args:
+        df1 (Pandas dataframe): First dataframe to concatenate. 
+        df2 (Pandas dataframe): Second dataframe to concatenate. 
+    Returns:
+        vertical_concat (Pandas dataframe): Combine df1 and df2 dataframe. 
+    """
+    vertical_concat = pd.concat([df1, df2], axis=0, ignore_index=True)
+    return vertical_concat
+
+def plot_data(data_table, log:bool = False):
     """
     Function that creates  a vs. e, a vs. i plots using the returned data table from the original query.
     Args:
         data_table (Pandas dataframe): Results from query. 
+        log (boolean) = False: Boolean that can turn on x-axis log. Default off (False)
     """
     if "class_name" not in data_table.columns:
         raise KeyError("class_name not a column.")
@@ -16,6 +33,8 @@ def plot_data(data_table):
     for class_type in data_table["class_name"].unique():
         class_data = data_table[data_table["class_name"] == class_type]
         ax.scatter(class_data["a"], class_data["e"], s=0.1, label=class_type)
+    if log is True:
+        ax.set_xscale('log')
     ax.set_xlabel('semimajor axis (au)')
     ax.set_ylabel('eccentricity')
     ax.set_title("a vs. e")
@@ -29,6 +48,8 @@ def plot_data(data_table):
     for class_type in data_table["class_name"].unique():
         class_data = data_table[data_table["class_name"] == class_type]
         ax.scatter(class_data["a"], class_data["incl"], s=0.1, label=class_type)
+    if log is True:
+        ax.set_xscale('log')
     ax.set_xlabel('semimajor axis (au)')
     ax.set_ylabel('inclination (deg)')
     ax.set_title("a vs. i")
@@ -45,8 +66,9 @@ def type_counts(data_table):
     Returns:
         counts: Pandas series containing counts of each unique value in 'class_name'. 
     """
-    if isinstance(x, pd.DataFrame): #checks if the data table passed to counts is pandas
+    if isinstance(data_table, pd.DataFrame): #checks if the data table passed to counts is pandas
         counts = data_table['class_name'].value_counts()
+        
     else:
         df = data_table.to_pandas()
         counts = df['class_name'].value_counts()
