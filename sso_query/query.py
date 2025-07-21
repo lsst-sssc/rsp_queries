@@ -18,7 +18,7 @@ ORBITAL_CLASS_CUTOFFS = {
 }
 ################################################
 
-def make_query(catalog, class_name = None, cutoffs = None, join = None):
+def make_query(catalog:str, class_name:str = None, cutoffs:dict = None, join:str = None, limit:int = None):
     """
     Creates an MPCORB table query from the catalog based on either a class_name or cutoffs dict.
     Creates a query from MPCORB 10-year table using the specificed catalog and class name OR cutoffs. Can join the MPCORB table with DiaSource or SSObject.
@@ -28,6 +28,7 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
         cutoffs = None (dict) (optional): Dictionaryof  orbital constraints (keys, str) and desired/input values (values, floats). 
         join = None (str) (optional): Table to join with MPCORB table. 
             DiaSource, SSObject
+        limit (int) (optional): Row limit on query.
     Returns:
         query (str): Query string for the specified constraints.
         class_name (str): Name of orbital class. Useful if orbital cutoff parameters provided. 
@@ -165,6 +166,10 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
     query_WHERE = f"""
     WHERE"""
     query = query_start + query_WHERE + " " + " AND ".join(conditions)
+    if limit is not None:
+        query_limit = f"""
+    LIMIT """ + str(limit)
+        query = query + query_limit
     query = query + ";"
 
     return query, class_name
