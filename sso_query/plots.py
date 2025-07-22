@@ -1,4 +1,4 @@
-def setup:
+def setup(df):
     if type(df) != pd.DataFrame:
         df = df.to_pandas()
     
@@ -11,7 +11,7 @@ def setup:
     return df_trimmed
 
 
-def basic_plots(df_trimmed):
+def basic_plots(df):
     
     # Plot a vs. e
     if 'a' in df.columns and 'e' in df.columns:   
@@ -45,7 +45,13 @@ def basic_plots(df_trimmed):
         plt.grid(True, ls="--", lw=0.5)
         plt.show()
 
-def ssobject_plots(df_trimmed):
+
+def run_basic_plots(df):
+    df_trimmed = setup(df)
+    return basic_plots(df_trimmed)
+
+
+def ssobject_plots(df):
     # Plot color
     if 'g_r_color' in df.columns and 'r_i_color' in df.columns:
         plt.figure(figsize=(7, 5))
@@ -99,3 +105,9 @@ def ssobject_plots(df_trimmed):
         ax.legend()
         plt.tight_layout()
         plt.show()
+
+
+def run_ssobject_plots(df):
+    df_trimmed = setup(df)
+    return ssobject_plots(df_trimmed)
+
