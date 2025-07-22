@@ -110,7 +110,7 @@ def data_grouped_mags(df):
     print("Mean Range:", np.mean(mag_range))
     
     # 3. Need to check which ranges are above change criterion. Using mean and std. deviation by object_type. 
-    large_criterion = np.mean(mag_range) + (np.std(mag_range)*2)
+    large_criterion = np.mean(mag_range) + (np.std(mag_range)*1)
     print(f"Large range criterion:", large_criterion)
     filtered_large_ranges = grouped_obs_data[grouped_obs_data['mag_range'] > large_criterion]
     # print(filtered_large_ranges) # debugging
@@ -175,13 +175,13 @@ def mag_range_plot(data_table, head_number = 5):
     }
     color = color_map.get(class_name, "gray")  # fallback to 'gray' if type unknown
     
-    sorted_filt_lrg_ranges = filtered_large_ranges.sort_values(by='mag_range', ascending=False)
+    sorted_filt_lrg_ranges = data_table.sort_values(by='mag_range', ascending=False)
 
 
     #
     if head_number is not None: # only filtering for the top number of values if number provided
-        top_srtd_filt_lrg_ranges = sorted_filt_lrg_ranges.iloc[:number,:]
-        plot_title = "Top " + head_number + " Magnitude Ranges"
+        top_srtd_filt_lrg_ranges = sorted_filt_lrg_ranges.iloc[:head_number,:]
+        plot_title = "Top " + str(head_number) + " Magnitude Ranges"
     else:
         top_srtd_filt_lrg_ranges = data_table
         plot_title = "Magnitude Ranges"
@@ -192,12 +192,12 @@ def mag_range_plot(data_table, head_number = 5):
     
     # For the largest objects, want to visualize their ranges
     fig, ax = plt.subplots()
-    ax.hlines(data = top_ranges, y = 'y_spacing', xmin = 'mag_min', xmax = 'mag_max', color = color, linewidth = 2, zorder = 2, label = object_type)
+    ax.hlines(data = top_ranges, y = 'y_spacing', xmin = 'mag_min', xmax = 'mag_max', color = color, linewidth = 2, zorder = 2, label = class_name)
     
     # adding reference line
     x_center = (top_ranges['mag_min'].min() + top_ranges['mag_max'].max()) / 2
-    xmin_ref = x_center - (np.mean(mag_range/2))
-    xmax_ref = x_center + (np.mean(mag_range/2))
+    xmin_ref = x_center - (np.mean(sorted_filt_lrg_ranges['mag_range']/2))
+    xmax_ref = x_center + (np.mean(sorted_filt_lrg_ranges['mag_range']/2))
     ax.hlines(y = 0, xmin = xmin_ref, xmax = xmax_ref, color = "blue", linewidth = 2, label = "Mean Range")
     sc = ax.scatter(data = top_ranges, x = 'mag_mean', y = 'y_spacing', s = 40, marker='o', edgecolors = "black", linewidth = 0.5, c='mag_mean', cmap = 'PiYG', zorder = 3, label = None)
     cbar = fig.colorbar(sc, ax=ax)
