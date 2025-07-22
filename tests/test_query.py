@@ -40,7 +40,7 @@ class TestQuery_DP03:
 
         query, class_name = make_query("dp03_catalogs_10yr", class_name = "LPC")
         assert expected_query == query
-    
+
     def test_centaurs_type_no_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q/(1-mpc.e) > 5.5 AND mpc.q/(1-mpc.e) < 30.1;"""
@@ -116,7 +116,7 @@ class TestQuery_DP03:
         query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = None)
         assert expected_query == query
         assert expected_class_name == class_name
-        
+
     def test_centaurs_params_no_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q/(1-mpc.e) > 5.5 AND mpc.q/(1-mpc.e) < 30.1;"""
@@ -128,7 +128,7 @@ class TestQuery_DP03:
 
         assert expected_query == query
         assert expected_class_name == class_name
-        
+
     def test_tno_params_no_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation FROM dp03_catalogs_10yr.MPCORB AS mpc
     WHERE mpc.q/(1-mpc.e) > 30.1 AND mpc.q/(1-mpc.e) < 50.0;"""
@@ -179,7 +179,7 @@ class TestQuery_DP03:
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
     WHERE mpc.q > 1.66 AND mpc.q/(1-mpc.e) > 2.0 AND mpc.q/(1-mpc.e) < 3.2;"""
-        
+
         query, class_name = make_query("dp03_catalogs_10yr", class_name = "MBA", join = 'DiaSource')
         assert expected_query == query
 
@@ -239,7 +239,7 @@ class TestQuery_DP03:
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
     WHERE mpc.q < 1.3 AND mpc.e < 1.0 AND mpc.q/(1-mpc.e) < 4.0;"""
-    
+
         expected_class_name = "NEO"
 
         cutoffs = {"q_max": 1.3, "a_max": 4.0, "e_max": 1.0}
@@ -274,10 +274,10 @@ class TestQuery_DP03:
         assert expected_class_name == class_name
 
     def test_lpc_params_join(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
-    INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
-    WHERE mpc.q/(1-mpc.e) > 50.0;"""
-        expected_class_name = "LPC"
+        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, dias.magTrueVband, dias.band FROM dp03_catalogs_10yr.MPCORB as mpc
+    INNER JOIN dp03_catalogs_10yr.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId
+    WHERE mpc.q/(1-mpc.e) > 50;"""
+        expected_object_type = "LPC"
 
         cutoffs = {"a_min": 50.0}
         query, class_name = make_query("dp03_catalogs_10yr", class_name = None, cutoffs = cutoffs, join = 'SSObject')
@@ -285,7 +285,7 @@ class TestQuery_DP03:
         assert expected_query == query
         assert expected_class_name == class_name
         
-    def test_centaurs_params_join(self):
+        def test_centaurs_params_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
     WHERE mpc.q/(1-mpc.e) > 5.5 AND mpc.q/(1-mpc.e) < 30.1;"""
@@ -308,7 +308,7 @@ class TestQuery_DP03:
 
         assert expected_query == query
         assert expected_class_name == class_name
-
+    
     def test_jtrojans_params_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
@@ -320,7 +320,7 @@ class TestQuery_DP03:
         
         assert expected_query == query
         assert expected_class_name == class_name
-
+        
     def test_ntrojans_params_join(self):
         expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
     INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId

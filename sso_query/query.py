@@ -1,10 +1,14 @@
-# Module holds functions for creating/running queries; and adding key columns to results table. 
-
+from astropy.table import Table
+from IPython.display import display
 from lsst.rsp import get_tap_service
 import matplotlib.pyplot as plt
-import pandas as pd
-from astropy.table import Table
+from matplotlib.colors import LogNorm
 import numpy as np
+import pandas as pd
+
+service = get_tap_service("ssotap")
+assert service is not None
+
 #################### Global ####################
 ORBITAL_CLASS_CUTOFFS = {
     "LPC": {"a_min": 50.0},
@@ -44,15 +48,14 @@ def make_query(catalog:str, class_name:str = None, cutoffs:dict = None, join:str
 
     default_cutoffs = {'q_min': None, 'q_max': None, 'e_min': None, 'e_max': None, 'a_min': None, 'a_max': None, 'tj_min': None, 'tj_max': None}
 
-    if (catalog != "dp03_catalogs_10yr" and catalog != "dp1"):
-        raise ValueError("Invalid catalog name provided. Choose between 'dp03_catalogs_10yr' and 'dp1'.")
-        
     if catalog == "dp03_catalogs_10yr":
-        service = get_tap_service("ssotap")
-        assert service is not None
+        service = get_tap_service("ssotap") # 'tap' for DP03
     elif catalog == "dp1":
-        service = get_tap_service("tap")
-        assert service is not None
+        service = get_tap_service("tap") # 'tap' for DP1
+    else:
+        raise ValueError("Please enter a valid catalog.")
+
+    assert service is not None
 
     # Classification #
     if cutoffs is not None: # given parameters, find object type #
@@ -84,14 +87,13 @@ def make_query(catalog:str, class_name:str = None, cutoffs:dict = None, join:str
             raise ValueError("Invalid class_name.")
             
     cutoffs = {**default_cutoffs, **cutoffs}
-    
 
+    
     ### Join ###
     select_fields = ["mpc.incl", "mpc.q", "mpc.e", "mpc.ssObjectID", "mpc.mpcDesignation"]
     join_clause = ""
 
-    # Adding selected fields from join table #
-    if join is not None:
+    if join:
         # DiaSource join
         if join == "DiaSource":
             join_clause = f"""
@@ -226,7 +228,7 @@ def run_query(query_string, class_name, catalog = "dp1", to_pandas = False):
         table = Table.from_pandas(table)
         print(table[0:5]) # print first few rows 
     else: #pandas table
-        print(table.head(5)) # print first five rows
+        display(table) # show first five rows
     
     return table
 
@@ -254,8 +256,3 @@ def calc_magnitude(apFlux):
         mags (ndarray): Converted magnitudes.
     """
     return -2.5 * np.log10(apFlux) + 31.4
-    
-
-
-
-    
