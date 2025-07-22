@@ -1,3 +1,9 @@
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+import numpy as np
+import pandas as pd
+
+
 def setup(df):
     if type(df) != pd.DataFrame:
         df = df.to_pandas()
@@ -11,17 +17,18 @@ def setup(df):
     return df_trimmed
 
 
-def basic_plots(df):
+def basic_plots(df, scatterplot_cutoff:int = 500, log_scale:bool = False):
+    use_heatmap = len(df) > scatterplot_cutoff
     
     # Plot a vs. e
     if 'a' in df.columns and 'e' in df.columns:   
         plt.figure(figsize=(7, 5))
         if use_heatmap:
             norm = LogNorm() if log_scale else None
-            plt.hist2d(df_trimmed['a'], df_trimmed['e'], bins=(200, 200), cmap='plasma', cmin=1, norm=norm)
+            plt.hist2d(df['a'], df['e'], bins=(200, 200), cmap='plasma', cmin=1, norm=norm)
             plt.colorbar(label='Number of objects (log scale)' if log_scale else 'Number of objects')
         else:
-            plt.scatter(df_trimmed['a'], df_trimmed['e'], s=0.1, alpha=0.5)
+            plt.scatter(df['a'], df['e'], s=0.1, alpha=0.5)
         plt.xlabel('Semi-major Axis (AU)')
         plt.ylabel('Eccentricity')
         plt.title('a vs. e')
@@ -34,10 +41,10 @@ def basic_plots(df):
         plt.figure(figsize=(7, 5))
         if use_heatmap:
             norm = LogNorm() if log_scale else None
-            plt.hist2d(df_trimmed['a'], df_trimmed['incl'], bins=(200, 200), cmap='plasma', cmin=1, norm=norm)
+            plt.hist2d(df['a'], df['incl'], bins=(200, 200), cmap='plasma', cmin=1, norm=norm)
             plt.colorbar(label='Number of objects (log scale)' if log_scale else 'Number of objects')
         else:
-            plt.scatter(df_trimmed['a'], df_trimmed['incl'], s=0.1, alpha=0.5)
+            plt.scatter(df['a'], df['incl'], s=0.1, alpha=0.5)
         plt.xlabel('Semi-major Axis (AU)')
         plt.ylabel('Inclination (deg)')
         plt.title('a vs. i')
@@ -46,12 +53,12 @@ def basic_plots(df):
         plt.show()
 
 
-def run_basic_plots(df):
+def run_basic_plots(df, scatterplot_cutoff:int = 500, log_scale:bool = False):
     df_trimmed = setup(df)
-    return basic_plots(df_trimmed)
+    return basic_plots(df_trimmed, scatterplot_cutoff=scatterplot_cutoff, log_scale=log_scale)
 
 
-def ssobject_plots(df):
+def ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
     # Plot color
     if 'g_r_color' in df.columns and 'r_i_color' in df.columns:
         plt.figure(figsize=(7, 5))
@@ -66,7 +73,7 @@ def ssobject_plots(df):
     # Plot new vs. known objects
     if 'discoverySubmissionDate' in df.columns and 'numObs' in df.columns:
         df['discoverySubmissionDate'] = pd.to_datetime(df['discoverySubmissionDate'], errors='coerce')
-        discovery_cutoff = pd.Timestamp("2020-01-01")
+        discovery_cutoff = pd.Timestamp(discovery_cutoff)
         df['is_new'] = df['discoverySubmissionDate'] >= discovery_cutoff
 
         plt.style.use("seaborn-v0_8-colorblind")
@@ -107,7 +114,7 @@ def ssobject_plots(df):
         plt.show()
 
 
-def run_ssobject_plots(df):
+def run_ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
     df_trimmed = setup(df)
-    return ssobject_plots(df_trimmed)
+    return ssobject_plots(df_trimmed, discovery_cutoff=discovery_cutoff)
 
