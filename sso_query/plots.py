@@ -72,6 +72,7 @@ def ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
 
     # Plot new vs. known objects
     if 'discoverySubmissionDate' in df.columns and 'numObs' in df.columns:
+        df = df.copy()
         df['discoverySubmissionDate'] = pd.to_datetime(df['discoverySubmissionDate'], errors='coerce')
         discovery_cutoff = pd.Timestamp(discovery_cutoff)
         df['is_new'] = df['discoverySubmissionDate'] >= discovery_cutoff
@@ -84,7 +85,8 @@ def ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
             # Plot a vs. e
             fig, axs = plt.subplots(1, 2, figsize=(12, 5))
             for is_new, group in df.groupby("is_new"):
-                axs[0].scatter(group["a"], group["e"], label="New" if is_new else "Known", alpha=0.6, s=15, c=color_map[is_new])
+                if not group.empty:
+                    axs[0].scatter(group["a"], group["e"], label="New" if is_new else "Known", alpha=0.6, s=15, c=color_map[is_new])
             axs[0].set_xlabel("Semi-Major Axis (a) [AU]")
             axs[0].set_ylabel("Eccentricity (e)")
             axs[0].set_title("Semi-Major Axis vs. Eccentricity")
@@ -92,7 +94,8 @@ def ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
             
             # Plot a vs. incl
             for is_new, group in df.groupby("is_new"):
-                axs[1].scatter(group["a"], group["incl"], label="New" if is_new else "Known", alpha=0.6, s=15, c=color_map[is_new])
+                if not group.empty:
+                    axs[1].scatter(group["a"], group["incl"], label="New" if is_new else "Known", alpha=0.6, s=15, c=color_map[is_new])
             axs[1].set_xlabel("Semi-Major Axis (a) [AU]")
             axs[1].set_ylabel("Inclination (i) [deg]")
             axs[1].set_title("Semi-Major Axis vs. Inclination")
