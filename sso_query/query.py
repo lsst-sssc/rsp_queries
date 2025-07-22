@@ -42,11 +42,11 @@ def make_query(catalog:str, class_name:str = None, cutoffs:dict = None, join:str
     if (class_name is not None and cutoffs is not None): # Both class name and cutoffs provided
         raise ValueError("Provide exactly one of: 'class_name', 'cutoffs'.")
 
+    default_cutoffs = {'q_min': None, 'q_max': None, 'e_min': None, 'e_max': None, 'a_min': None, 'a_max': None, 'tj_min': None, 'tj_max': None}
+
     if (catalog != "dp03_catalogs_10yr" and catalog != "dp1"):
         raise ValueError("Invalid catalog name provided. Choose between 'dp03_catalogs_10yr' and 'dp1'.")
         
-    default_cutoffs = {'q_min': None, 'q_max': None, 'e_min': None, 'e_max': None, 'a_min': None, 'a_max': None, 'tj_min': None, 'tj_max': None}
-
     if catalog == "dp03_catalogs_10yr":
         service = get_tap_service("ssotap")
         assert service is not None
