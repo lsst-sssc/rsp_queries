@@ -2,6 +2,8 @@ from astropy.table import Table
 from IPython.display import display
 from lsst.rsp import get_tap_service
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+import numpy as np
 import pandas as pd
 
 service = get_tap_service("ssotap")
@@ -45,6 +47,15 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
         
     default_cutoffs = {'q_min': None, 'q_max': None, 'e_min': None, 'e_max': None, 'a_min': None, 'a_max': None, 'tj_min': None, 'tj_max': None}
 
+    if catalog == "dp03_catalogs_10yr":
+        service = get_tap_service("ssotap") # 'tap' for DP03
+    elif catalog == "dp1":
+        service = get_tap_service("tap") # 'tap' for DP1
+    else:
+        raise ValueError("Please enter a valid catalog.")
+
+    assert service is not None
+
     # Classification #
     if cutoffs is not None: # given parameters, find object type #
         cutoffs = {**default_cutoffs, **cutoffs} # user inputs cutoffs overlay default cutoffs
@@ -81,29 +92,19 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
     select_fields = ["mpc.incl", "mpc.q", "mpc.e", "mpc.ssObjectID", "mpc.mpcDesignation"]
     join_clause = ""
 
-    # Adding selected fields from join table #
-    if join is not None:
-        if catalog == "dp03_catalogs_10yr":
-            service = get_tap_service("ssotap") # 'tap' for DP03
-        elif catalog == "dp1":
-            service = get_tap_service("tap") # 'tap' for DP1
-        else:
-            raise ValueError("Please enter a valid catalog.")
-
-        assert service is not None
-        
+    if join:
         # DiaSource join
         if join == "DiaSource":
             join_clause = f"""
     INNER JOIN {catalog}.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId"""
             try:
-                #sso_results = service.search(f"SELECT column_name FROM TAP_SCHEMA.columns WHERE table_name = '{catalog}.DiaSource'")
                 sso_results = service.search(f"""SELECT "column_name" FROM TAP_SCHEMA.columns WHERE "table_name" = '{catalog}.DiaSource'""")
                 sso_table = sso_results.to_table()
                 sso_table.rename_column('"column_name"', "column_name")
                 
-                available_fields = sso_table["column_name"].tolist()                        
-                desired_fields = ["dias.magTrueVband", "dias.band"]
+                available_fields = sso_table["column_name"].tolist()
+                if catalog == 'dp03_catalogs_10yr':
+                    desired_fields = ["dias.magTrueVband", "dias.band"]
                 
                 present_fields = [field for field in desired_fields if field.split(".")[1] in available_fields]
                 select_fields += present_fields
@@ -237,90 +238,4 @@ def calc_semimajor_axis(q, e):
     """
     
     return q / (1.0 - e)
-
-
-def plots(df):
-
-    if type(df) != pd.DataFrame:
-        df = df.to_pandas()
-
-    a_min, a_max = np.percentile(df['a'], [0.5, 99.5])
-    e_min, e_max = np.percentile(df['e'], [0.5, 99.5])
-    i_min, i_max = np.percentile(df['incl'], [0.5, 99.5])
-
-    df_trimmed = df[(df['a'] >= a_min) & (df['a'] <= a_max) & (df['e'] >= e_min) & (df['e'] <= e_max) & (df['incl'] >= i_min) & (df['incl'] <= i_max)]
-
-    # Plot a vs. e
-    if 'a' in df.columns and 'e' in df.columns:
-        plt.figure(figsize=(7, 5))
-        plt.scatter(df_trimmed['a'], df_trimmed['e'], s=0.1, alpha=0.5)
-        plt.xlabel('Semi-major Axis (AU)')
-        plt.ylabel('Eccentricity')
-        plt.title('a vs. e')
-        plt.show()
-
-    # Plot a vs. incl
-    if 'a' in df.columns and 'incl' in df.columns:
-        plt.figure(figsize=(7, 5))
-        plt.scatter(df_trimmed['a'], df_trimmed['incl'], s=0.1, alpha=0.5)
-        plt.xlabel('Semi-major Axis (AU)')
-        plt.ylabel('Inclination')
-        plt.title('a vs. i')
-        plt.show()
-
-    # Plot color
-    if 'g_r_color' in df.columns and 'r_i_color' in df.columns:
-        plt.figure(figsize=(7, 5))
-        plt.scatter(df['g_r_color'], df['r_i_color'], s=1, alpha=0.5, c='steelblue')
-        plt.xlabel("g‒r")
-        plt.ylabel("r‒i")
-        plt.title("g‒r vs. r‒i")
-        plt.grid(True, ls="--", lw=0.5)
-        plt.tight_layout()
-        plt.show()
-
-
-    if 'discoverySubmissionDate' in df.columns and 'numObs' in df.columns:
-        df['discoverySubmissionDate'] = pd.to_datetime(df['discoverySubmissionDate'], errors='coerce')
-        discovery_cutoff = pd.Timestamp("2020-01-01")
-        df['is_new'] = df['discoverySubmissionDate'] >= discovery_cutoff
-
-        plt.style.use("seaborn-v0_8-colorblind")
-        color_map = {True: "C1", False: "C0"}
-
-        # Plot a vs. e
-        if 'a' in df.columns and 'e' in df.columns and 'incl' in df.columns:
-            # Plot a vs. e
-            fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-            for is_new, group in df.groupby("is_new"):
-                axs[0].scatter(group["a"], group["e"], label="New" if is_new else "Known", alpha=0.6, s=15, c=color_map[is_new])
-            axs[0].set_xlabel("Semi-Major Axis (a) [AU]")
-            axs[0].set_ylabel("Eccentricity (e)")
-            axs[0].set_title("Semi-Major Axis vs. Eccentricity")
-            axs[0].legend()
-            
-            # Plot a vs. incl
-            for is_new, group in df.groupby("is_new"):
-                axs[1].scatter(group["a"], group["incl"], label="New" if is_new else "Known", alpha=0.6, s=15, c=color_map[is_new])
-            axs[1].set_xlabel("Semi-Major Axis (a) [AU]")
-            axs[1].set_ylabel("Inclination (i) [deg]")
-            axs[1].set_title("Semi-Major Axis vs. Inclination")
-            axs[1].legend()
-
-            plt.suptitle("New vs. Known Objects")
-            plt.tight_layout(rect=[0, 0, 1, 0.95])
-            plt.show()
-             
-
-        # Number of Observations Histogram
-        fig, ax = plt.subplots(figsize=(8, 6))
-        for is_new, group in df.groupby("is_new"):
-            ax.hist(group["numObs"], bins=30, alpha=0.7, label="New" if is_new else "Known", color=color_map[is_new])
-        ax.set_xlabel("Number of Observations")
-        ax.set_ylabel("Count")
-        ax.set_title("Observation Count Distribution")
-        ax.legend()
-        plt.tight_layout()
-        plt.show()
-
 

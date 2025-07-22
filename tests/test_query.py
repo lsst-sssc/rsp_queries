@@ -547,19 +547,3 @@ class TestQuery_DP1:
 #         query, class_name = make_query("dp03_catalogs_10yr", class_name = "Ntrojan", join = 'SSObject')
 #         assert expected_query == query
 
-
-#### NORAS
-    
-    def test_neos_params_join_ssobject(self):
-        expected_query = f"""SELECT mpc.incl, mpc.q, mpc.e, mpc.ssObjectID, mpc.mpcDesignation, sso.g_H, sso.r_H, sso.i_H, sso.discoverySubmissionDate, sso.numObs, (sso.g_H - sso.r_H) AS g_r_color, (sso.r_H - sso.i_H) AS r_i_color FROM dp03_catalogs_10yr.MPCORB AS mpc
-    INNER JOIN dp03_catalogs_10yr.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId
-    WHERE mpc.q < 1.3 AND mpc.e < 1.0 AND mpc.q/(1-mpc.e) < 4.0;"""
-        expected_class_name = "NEO"
-        
-        query_cutoffs, class_name = make_query('dp03_catalogs_10yr', class_name=None, cutoffs = {"q_max": 1.3, "a_max": 4.0, "e_max": 1.0}, join='SSObject')
-        query_name, class_name = make_query('dp03_catalogs_10yr', class_name='NEO', cutoffs = None, join='SSObject')
-        
-        assert expected_query == query_cutoffs
-        assert expected_query == query_name
-        assert expected_class_name == class_name
->>>>>>> Stashed changes
