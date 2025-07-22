@@ -22,7 +22,7 @@ ORBITAL_CLASS_CUTOFFS = {
 }
 ################################################
 
-def make_query(catalog, class_name = None, cutoffs = None, join = None):
+def make_query(catalog:str, class_name:str = None, cutoffs:dict = None, join:str = None, limit:int = None):
     """
     Creates an MPCORB table query from the catalog based on either a class_name or cutoffs dict.
     Creates a query from MPCORB 10-year table using the specificed catalog and class name OR cutoffs. Can join the MPCORB table with DiaSource or SSObject.
@@ -32,6 +32,7 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
         cutoffs = None (dict) (optional): Dictionaryof  orbital constraints (keys, str) and desired/input values (values, floats). 
         join = None (str) (optional): Table to join with MPCORB table. 
             DiaSource, SSObject
+        limit (int) (optional): Row limit on query.
     Returns:
         query (str): Query string for the specified constraints.
         class_name (str): Name of orbital class. Useful if orbital cutoff parameters provided. 
@@ -44,7 +45,7 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
         raise ValueError("Please provide a class name ('class_name') OR desired orbital parameters ('cutoffs').")
     if (class_name is not None and cutoffs is not None): # Both class name and cutoffs provided
         raise ValueError("Provide exactly one of: 'class_name', 'cutoffs'.")
-        
+
     default_cutoffs = {'q_min': None, 'q_max': None, 'e_min': None, 'e_max': None, 'a_min': None, 'a_max': None, 'tj_min': None, 'tj_max': None}
 
     if catalog == "dp03_catalogs_10yr":
@@ -98,14 +99,15 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
             join_clause = f"""
     INNER JOIN {catalog}.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId"""
             try:
-                sso_results = service.search(f"""SELECT "column_name" FROM TAP_SCHEMA.columns WHERE "table_name" = '{catalog}.DiaSource'""")
-                sso_table = sso_results.to_table()
-                sso_table.rename_column('"column_name"', "column_name")
-                
-                available_fields = sso_table["column_name"].tolist()
-                if catalog == 'dp03_catalogs_10yr':
+                sso_results = service.search(f"SELECT column_name from TAP_SCHEMA.columns WHERE table_name = '{catalog}.DiaSource'")
+                sso_table = sso_results.to_table().to_pandas()
+                available_fields = sso_table['column_name'].tolist()
+
+                if catalog == "dp03_catalogs_10yr":
                     desired_fields = ["dias.magTrueVband", "dias.band"]
-                
+                elif catalog == "dp1":
+                    desired_fields = ["dias.apFlux", "dias.apFlux_flag", "dias.apFluxErr", "dias.band"]
+    
                 present_fields = [field for field in desired_fields if field.split(".")[1] in available_fields]
                 select_fields += present_fields
 
@@ -119,13 +121,15 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
             join_clause = f"""
     INNER JOIN {catalog}.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId"""
             try:
-                sso_results = service.search(f"""SELECT "column_name" FROM TAP_SCHEMA.columns WHERE "table_name" = '{catalog}.SSObject'""")
-                sso_table = sso_results.to_table()
-                sso_table.rename_column('"column_name"', "column_name")
-                
-                available_fields = sso_table["column_name"].tolist()            
-                desired_fields = ["sso.g_H", "sso.r_H", "sso.i_H", "sso.discoverySubmissionDate", "sso.numObs"]
+                sso_results = service.search(f"SELECT column_name from TAP_SCHEMA.columns WHERE table_name = '{catalog}.SSObject'")
+                sso_table = sso_results.to_table().to_pandas()
+                available_fields = sso_table['column_name'].tolist()
 
+                if catalog == "dp03_catalogs_10yr":
+                    desired_fields = ["sso.g_H", "sso.r_H", "sso.i_H", "sso.discoverySubmissionDate", "sso.numObs"]
+                elif catalog == "dp1":
+                    desired_fields = ["sso.discoverySubmissionDate", "sso.numObs"]
+    
                 present_fields = [field for field in desired_fields if field.split(".")[1] in available_fields]
                 select_fields += present_fields
     
@@ -164,6 +168,10 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
     query_WHERE = f"""
     WHERE"""
     query = query_start + query_WHERE + " " + " AND ".join(conditions)
+    if limit is not None:
+        query_limit = f"""
+    LIMIT """ + str(limit)
+        query = query + query_limit
     query = query + ";"
 
     return query, class_name
@@ -239,3 +247,12 @@ def calc_semimajor_axis(q, e):
     
     return q / (1.0 - e)
 
+def calc_magnitude(apFlux):
+    """
+    Given a difference image flux, calculates the magnitude. 
+    Args:
+        apFlux (ndarray): Flux. 
+    Returns:
+        mags (ndarray): Converted magnitudes.
+    """
+    return -2.5 * np.log10(apFlux) + 31.4
