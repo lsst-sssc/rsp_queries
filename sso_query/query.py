@@ -1,7 +1,10 @@
+from astropy.table import Table
+from IPython.display import display
 from lsst.rsp import get_tap_service
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+import numpy as np
 import pandas as pd
-from astropy.table import Table
 
 service = get_tap_service("ssotap")
 assert service is not None
@@ -44,6 +47,15 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
         
     default_cutoffs = {'q_min': None, 'q_max': None, 'e_min': None, 'e_max': None, 'a_min': None, 'a_max': None, 'tj_min': None, 'tj_max': None}
 
+    if catalog == "dp03_catalogs_10yr":
+        service = get_tap_service("ssotap") # 'tap' for DP03
+    elif catalog == "dp1":
+        service = get_tap_service("tap") # 'tap' for DP1
+    else:
+        raise ValueError("Please enter a valid catalog.")
+
+    assert service is not None
+
     # Classification #
     if cutoffs is not None: # given parameters, find object type #
         cutoffs = {**default_cutoffs, **cutoffs} # user inputs cutoffs overlay default cutoffs
@@ -74,25 +86,26 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
             raise ValueError("Invalid class_name.")
             
     cutoffs = {**default_cutoffs, **cutoffs}
-    
 
+    
     ### Join ###
     select_fields = ["mpc.incl", "mpc.q", "mpc.e", "mpc.ssObjectID", "mpc.mpcDesignation"]
     join_clause = ""
 
-    # Adding selected fields from join table #
-    if join is not None:
+    if join:
         # DiaSource join
         if join == "DiaSource":
             join_clause = f"""
     INNER JOIN {catalog}.DiaSource AS dias ON mpc.ssObjectId = dias.ssObjectId"""
             try:
-                sso_results = service.search(f"SELECT column_name from TAP_SCHEMA.columns WHERE table_name = '{catalog}.DiaSource'")
-                sso_table = sso_results.to_table().to_pandas()
-                available_fields = sso_table['column_name'].tolist()
-            
-                desired_fields = ["dias.magTrueVband", "dias.band"]
-    
+                sso_results = service.search(f"""SELECT "column_name" FROM TAP_SCHEMA.columns WHERE "table_name" = '{catalog}.DiaSource'""")
+                sso_table = sso_results.to_table()
+                sso_table.rename_column('"column_name"', "column_name")
+                
+                available_fields = sso_table["column_name"].tolist()
+                if catalog == 'dp03_catalogs_10yr':
+                    desired_fields = ["dias.magTrueVband", "dias.band"]
+                
                 present_fields = [field for field in desired_fields if field.split(".")[1] in available_fields]
                 select_fields += present_fields
 
@@ -106,12 +119,13 @@ def make_query(catalog, class_name = None, cutoffs = None, join = None):
             join_clause = f"""
     INNER JOIN {catalog}.SSObject AS sso ON mpc.ssObjectId = sso.ssObjectId"""
             try:
-                sso_results = service.search(f"SELECT column_name from TAP_SCHEMA.columns WHERE table_name = '{catalog}.SSObject'")
-                sso_table = sso_results.to_table().to_pandas()
-                available_fields = sso_table['column_name'].tolist()
-            
+                sso_results = service.search(f"""SELECT "column_name" FROM TAP_SCHEMA.columns WHERE "table_name" = '{catalog}.SSObject'""")
+                sso_table = sso_results.to_table()
+                sso_table.rename_column('"column_name"', "column_name")
+                
+                available_fields = sso_table["column_name"].tolist()            
                 desired_fields = ["sso.g_H", "sso.r_H", "sso.i_H", "sso.discoverySubmissionDate", "sso.numObs"]
-    
+
                 present_fields = [field for field in desired_fields if field.split(".")[1] in available_fields]
                 select_fields += present_fields
     
@@ -206,7 +220,7 @@ def run_query(query_string, class_name, catalog = "dp1", to_pandas = False):
         table = Table.from_pandas(table)
         print(table[0:5]) # print first few rows 
     else: #pandas table
-        print(table.head(5)) # print first five rows
+        display(table) # show first five rows
     
     return table
 
@@ -225,7 +239,3 @@ def calc_semimajor_axis(q, e):
     
     return q / (1.0 - e)
 
-
-
-
-    
