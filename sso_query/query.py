@@ -226,9 +226,9 @@ def run_query(query_string, class_name, catalog = "dp1", to_pandas = False):
 
     if to_pandas is False: #AstroPy table
         table = Table.from_pandas(table)
-        print(table[0:5]) # print first few rows 
+        print(table[0:20]) # print first 20 rows 
     else: #pandas table
-        display(table) # show first five rows
+        display(table.head(20))  # Show just the first 20 rows
     
     return table
 

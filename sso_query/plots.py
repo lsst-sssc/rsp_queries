@@ -1,3 +1,4 @@
+from astropy.time import Time
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import numpy as np
@@ -17,86 +18,124 @@ def setup(df):
     return df_trimmed
 
 
-def basic_plots(df, scatterplot_cutoff:int = 500, log_scale:bool = False):
+def scatter_plots(df):
     """
-    Function that creates  a vs. e, a vs. i plots using the returned data table from the original query.
+    Function that creates  a vs. e, a vs. i scatter plots using the returned data table from the original query.
     Args:
-        data_table (Pandas dataframe): Results from query. 
-        scatterplot_cutoff (int) = 500: Number of points to create a heat map plot instead of a scatter plot. 
-        log (boolean) = False: Boolean that can turn on x-axis log. Default off (False)
+        df (Pandas dataframe): Results from query. 
     """
-    use_heatmap = len(df) > scatterplot_cutoff
-    
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+
     # Plot a vs. e
     if 'a' in df.columns and 'e' in df.columns:   
-        plt.figure(figsize=(7, 5))
-        if use_heatmap:
-            norm = LogNorm() if log_scale else None
-            plt.hist2d(df['a'], df['e'], bins=(200, 200), cmap='plasma', cmin=1, norm=norm)
-            plt.colorbar(label='Number of objects (log scale)' if log_scale else 'Number of objects')
-        else:
-            for class_type in df["class_name"].unique():
-                class_data = df[df["class_name"] == class_type]
-                plt.scatter(class_data["a"], class_data["e"], s=0.1, alpha=0.5, label=class_type)
-        plt.xlabel('Semi-major Axis (AU)')
-        plt.ylabel('Eccentricity')
-        plt.title('a vs. e')
-        plt.tight_layout()
-        plt.grid(True, ls="--", lw=0.5)
-        plt.show()
+        for class_type in df["class_name"].unique():
+            class_data = df[df["class_name"] == class_type]
+            axs[0].scatter(class_data["a"], class_data["e"], s=1, alpha=0.5, label=class_type)
+        axs[0].set_xlabel('Semi-major Axis (AU)')
+        axs[0].set_ylabel('Eccentricity')
+        axs[0].set_title('a vs. e')
+        axs[0].grid(True, ls="--", lw=0.5)
+        axs[0].legend(markerscale=10, fontsize="small", loc="best")
 
     # Plot a vs. incl
     if 'a' in df.columns and 'incl' in df.columns:
-        plt.figure(figsize=(7, 5))
-        if use_heatmap:
-            norm = LogNorm() if log_scale else None
-            plt.hist2d(df['a'], df['incl'], bins=(200, 200), cmap='plasma', cmin=1, norm=norm)
-            plt.colorbar(label='Number of objects (log scale)' if log_scale else 'Number of objects')
-        else:
-            for class_type in df["class_name"].unique():
-                class_data = df[df["class_name"] == class_type]
-                plt.scatter(class_data["a"], class_data["incl"], s=0.1, alpha=0.5, label=class_type)
-        plt.xlabel('Semi-major Axis (AU)')
-        plt.ylabel('Inclination (deg)')
-        plt.title('a vs. i')
-        plt.tight_layout()
-        plt.grid(True, ls="--", lw=0.5)
-        plt.show()
+        for class_type in df["class_name"].unique():
+            class_data = df[df["class_name"] == class_type]
+            axs[1].scatter(class_data["a"], class_data["incl"], s=1, alpha=0.5, label=class_type)
+        axs[1].set_xlabel('Semi-major Axis (AU)')
+        axs[1].set_ylabel('Inclination (deg)')
+        axs[1].set_title('a vs. i')
+        axs[1].grid(True, ls="--", lw=0.5)
+        axs[1].legend(markerscale=10, fontsize="small", loc="best")
 
-def run_basic_plots(df, scatterplot_cutoff:int = 500, log_scale:bool = False):
+    plt.suptitle("Dynamical Constraints Scatter Plots")
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.show()
+
+def run_scatter_plots(df):
     df_trimmed = setup(df)
-    return basic_plots(df_trimmed, scatterplot_cutoff=scatterplot_cutoff, log_scale=log_scale)
+    return scatter_plots(df_trimmed)
 
+
+def heat_maps(df, log_scale:bool = False):
+    """
+    Function that creates a vs. e, a vs. i heat map plots using the returned data table from the original query.
+    Args:
+        df (Pandas dataframe): Results from query. 
+        log_scale (boolean) = False: Boolean that can turn on x-axis log. Default off (False)
+    """
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+    norm = LogNorm() if log_scale else None
+    
+    # Plot a vs. e
+    if 'a' in df.columns and 'e' in df.columns:   
+        h1 = axs[0].hist2d(df['a'], df['e'], bins=(200, 200), cmap='plasma', cmin=1, norm=norm)
+        fig.colorbar(h1[3], ax=axs[0], label='Number of objects (log scale)' if log_scale else 'Number of objects')
+        axs[0].set_xlabel('Semi-major Axis (AU)')
+        axs[0].set_ylabel('Eccentricity')
+        axs[0].set_title('a vs. e')
+        axs[0].grid(True, ls="--", lw=0.5)
+        
+     # Plot a vs. incl
+    if 'a' in df.columns and 'incl' in df.columns:
+        h2 = axs[1].hist2d(df['a'], df['incl'], bins=(200, 200), cmap='plasma', cmin=1, norm=norm)
+        fig.colorbar(h2[3], ax=axs[1], label='Number of objects (log scale)' if log_scale else 'Number of objects')
+        axs[1].set_xlabel('Semi-major Axis (AU)')
+        axs[1].set_ylabel('Inclination (deg)')
+        axs[1].set_title('a vs. i')
+        axs[1].grid(True, ls="--", lw=0.5)
+    
+    plt.suptitle("Dynamical Constraints Heat Maps")
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.show()
+             
+
+def run_heat_maps(df, log_scale:bool = False):
+    df_trimmed = setup(df)
+    return heat_maps(df_trimmed, log_scale=log_scale)
+        
 
 def ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
+    """
+    Function that creates f-r vs. r-i color plot and plots new vs. known objects using the returned data table from the original query.
+    """
     # Plot color
     if 'g_r_color' in df.columns and 'r_i_color' in df.columns:
         plt.figure(figsize=(7, 5))
-        plt.scatter(df['g_r_color'], df['r_i_color'], s=1, alpha=0.5, c='steelblue')
+        for class_type in df["class_name"].unique():
+            class_data = df[df["class_name"] == class_type]
+            plt.scatter(class_data['g_r_color'], class_data['r_i_color'], s=1, alpha=0.5, label=class_type)
         plt.xlabel("g‒r")
         plt.ylabel("r‒i")
         plt.title("g‒r vs. r‒i")
         plt.grid(True, ls="--", lw=0.5)
+        plt.legend(markerscale=10, fontsize="small", loc="best")
         plt.tight_layout()
         plt.show()
 
     # Plot new vs. known objects
     if 'discoverySubmissionDate' in df.columns and 'numObs' in df.columns:
         df = df.copy()
+        mask = df['discoverySubmissionDate'].notna()
+        mjd_values = df.loc[mask, 'discoverySubmissionDate'].astype(float)
+        converted_times = Time(mjd_values, format='mjd').to_datetime()
+        df['discoverySubmissionDate'] = df['discoverySubmissionDate'].astype('object')
+        df.loc[mask, 'discoverySubmissionDate'] = pd.Series(converted_times, index=mjd_values.index)
         df['discoverySubmissionDate'] = pd.to_datetime(df['discoverySubmissionDate'], errors='coerce')
         discovery_cutoff = pd.Timestamp(discovery_cutoff)
         df['is_new'] = df['discoverySubmissionDate'] >= discovery_cutoff
 
         plt.style.use("seaborn-v0_8-colorblind")
-        color_map = {True: "C1", False: "C0"}
-
+        color_map = {True: "#FDBFCD", False: "#77DD77",}  # Known: pink, New: green        
+        marker_map = {True: 'x', False: 'o'} # x for new, o for known
+        
         if 'a' in df.columns and 'e' in df.columns and 'incl' in df.columns:
             
             # Plot a vs. e
             fig, axs = plt.subplots(1, 2, figsize=(12, 5))
             for is_new, group in df.groupby("is_new"):
                 if not group.empty:
-                    axs[0].scatter(group["a"], group["e"], label="New" if is_new else "Known", alpha=0.6, s=15, c=color_map[is_new])
+                    axs[0].scatter(group["a"], group["e"], label="New" if is_new else "Known", alpha=0.5, s=5, c=color_map[is_new], marker=marker_map[is_new], edgecolor='k', linewidth=0.2)
             axs[0].set_xlabel("Semi-Major Axis (a) [AU]")
             axs[0].set_ylabel("Eccentricity (e)")
             axs[0].set_title("Semi-Major Axis vs. Eccentricity")
@@ -105,7 +144,7 @@ def ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
             # Plot a vs. incl
             for is_new, group in df.groupby("is_new"):
                 if not group.empty:
-                    axs[1].scatter(group["a"], group["incl"], label="New" if is_new else "Known", alpha=0.6, s=15, c=color_map[is_new])
+                    axs[1].scatter(group["a"], group["incl"], label="New" if is_new else "Known", alpha=0.5, s=5, c=color_map[is_new], marker=marker_map[is_new], edgecolor='k', linewidth=0.2)
             axs[1].set_xlabel("Semi-Major Axis (a) [AU]")
             axs[1].set_ylabel("Inclination (i) [deg]")
             axs[1].set_title("Semi-Major Axis vs. Inclination")
@@ -118,7 +157,7 @@ def ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
         # Number of Observations Histogram
         fig, ax = plt.subplots(figsize=(8, 6))
         for is_new, group in df.groupby("is_new"):
-            ax.hist(group["numObs"], bins=30, alpha=0.7, label="New" if is_new else "Known", color=color_map[is_new])
+            ax.hist(group["numObs"], bins=20, alpha=0.5, label="New" if is_new else "Known", color=color_map[is_new], histtype='stepfilled', edgecolor='black')
         ax.set_xlabel("Number of Observations")
         ax.set_ylabel("Number of Objects")
         ax.set_title("Observation Count Distribution: New vs. Known Objects")
@@ -126,8 +165,7 @@ def ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
         plt.tight_layout()
         plt.show()
 
-
-def run_ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
+def run_ssobject_plots(df, discovery_cutoff:str = "2025-06-25"):
     df_trimmed = setup(df)
     return ssobject_plots(df_trimmed, discovery_cutoff=discovery_cutoff)
 
