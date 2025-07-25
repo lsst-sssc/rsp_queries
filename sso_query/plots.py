@@ -129,22 +129,30 @@ def run_ssobject_plots(df, discovery_cutoff:str = "2025-06-30"):
     return ssobject_plots(df_trimmed, discovery_cutoff=discovery_cutoff)
 
 
-def combine_tables(df1, df2):
+def combine_tables(*dfs: pd.DataFrame) -> pd.DataFrame:
     """
-    Function vertically concatenates two dataframes. Useful for combining data tables of different types.
+    Vertically concatenates multiple pandas DataFrames. Useful for combining data tables of different types.
+
     Args:
-        df1 (Pandas dataframe): First dataframe to concatenate. 
-        df2 (Pandas dataframe): Second dataframe to concatenate. 
+        *dfs (pd.DataFrame): Any number of dataframes to concatenate.
+
     Returns:
-        vertical_concat (Pandas dataframe): Combine df1 and df2 dataframe. 
+        pd.DataFrame: Combined dataframe. 
     """
-    vertical_concat = pd.concat([df1, df2], axis=0, ignore_index=True)
+    converted = []
+    for df in dfs:
+        if isinstance(df, pd.DataFrame):
+            converted.append(df)
+        else:
+            converted.append(df.to_table().to_pandas())
+    vertical_concat = pd.concat(converted, axis=0, ignore_index=True)
     return vertical_concat
 
 
-def type_counts(data_table):
+
+def obs_type_counts(data_table):
     """
-    Function returns the number of counts per unique class_name. 
+    Function returns the number of observations per class type. 
     Args:
         data_table: Table of data with 'class_name' parameter. Can be pandas table or Astropy table. 
     Returns:
@@ -159,6 +167,37 @@ def type_counts(data_table):
     print(counts)
     return counts
 
+def obs_unique_obj_counts(data_table):
+    """
+    Function returns the number of observations per unique object.
+    Args:
+        data_table: Table of data with 'ssObjectID' and 'class_name' parameters. Can be pandas table or Astropy table. 
+    Returns:
+        counts: Pandas series containing counts of each unique value in 'ssObjectID'.  
+    """
+    if isinstance(data_table, pd.DataFrame):
+        counts = data_table.groupby('ssObjectID')["class_name"].value_counts().reset_index(name="obs_count")
+    else:
+        df = data_table.to_pandas()
+        counts = df.groupby('ssObjectID')["class_name"].value_counts().reset_index(name="obs_count")
+    print(counts)
+    return counts
+
+def type_counts(data_table):
+    """
+    Function returns number of unique objects per class type.
+    Args:
+        data_table: Pandas Dataframe containing all dp1 data. 
+    Returns:
+        counts: Dictionary containing object count per class type. 
+    """
+    if isinstance(data_table, pd.DataFrame):
+        counts = data_table.groupby("class_name")["ssObjectID"].nunique().reset_index(name="object_count")
+    else:
+        df = data_table.to_pandas()
+        counts = df.groupby("class_name")["ssObjectID"].nunique().reset_index(name="object_count")
+    print(counts)
+    return counts
 
 def data_grouped_mags(df):
     """
@@ -169,6 +208,12 @@ def data_grouped_mags(df):
         sorted_filt_lrg_ranges (Pandas df): Original dataframe grouped by class name and unique observation, added min/max/mean/range magnitude columns,
             filtered by 2 std deviation criterion in mag range, in a descending order according to mag range column.
     """
+    if not isinstance(df, pd.DataFrame):
+        df = df.to_pandas()
+
+    if df is None or df.empty:
+        print("No values found.")
+        return pd.DataFrame()
     
     # Check that class_name and ssObjectID are actual columns
     if "class_name" not in df.columns:
@@ -194,11 +239,15 @@ def data_grouped_mags(df):
     print("Mean Range:", np.mean(mag_range))
     
     # 3. Need to check which ranges are above change criterion. Using mean and std. deviation by object_type. 
-    large_criterion = np.mean(mag_range) + (np.std(mag_range)*1)
+    large_criterion = np.mean(mag_range) + (np.std(mag_range) * 1)
     print(f"Large range criterion:", large_criterion)
+    
     filtered_large_ranges = grouped_obs_data[grouped_obs_data['mag_range'] > large_criterion]
-    # print(filtered_large_ranges) # debugging
-    # print(filtered_large_ranges.columns) #debugging
+    
+    # Check if filtering removed all or too many rows
+    if filtered_large_ranges.empty or len(filtered_large_ranges) > len(grouped_obs_data):
+        print("Large range criterion removed all or too many objects — skipping filter.")
+        filtered_large_ranges = grouped_obs_data.copy()
     
     # 4. Rearranging dataframe so magnitude ranges are in descending order (largest at the top).
     sorted_filt_lrg_ranges = filtered_large_ranges.sort_values(by='mag_range', ascending=False)
@@ -240,7 +289,6 @@ def obs_filter(df):
 def mag_range_plot(data_table, head_number = 5):
     """
     Function plots magnitude ranges for the specified number of objects.
-    Function plots magnitude ranges (V) for the first number of objects. 
         1. If head_number is None, all objects plotted. 
     Args:
         data_table: Pandas dataframe with values to plot.
