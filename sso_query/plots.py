@@ -110,8 +110,7 @@ def heat_maps(df, log_scale:bool = False, bins:int = 200):
     
     plt.suptitle("Dynamical Constraints Heat Maps")
     plt.tight_layout(rect=[0, 0, 1, 0.95])
-    plt.show()
-             
+    plt.show()     
 
 def run_heat_maps(df, log_scale:bool = False, bins:int = 200):
     df_trimmed = setup(df)
@@ -232,7 +231,6 @@ def ssobject_plots(df):
     else:
         print("Columns do not exist in this table.")
 
-
 def run_ssobject_plots(df):
     df_trimmed = setup(df)
     return ssobject_plots(df_trimmed)
@@ -258,7 +256,6 @@ def combine_tables(*dfs: pd.DataFrame) -> pd.DataFrame:
     return vertical_concat
 
 
-
 def obs_type_counts(data_table):
     """
     Function returns the number of observations per class type. 
@@ -276,6 +273,7 @@ def obs_type_counts(data_table):
     print(counts)
     return counts
 
+    
 def obs_unique_obj_counts(data_table):
     """
     Function returns the number of observations per unique object.
@@ -292,6 +290,7 @@ def obs_unique_obj_counts(data_table):
     print(counts)
     return counts
 
+
 def type_counts(data_table):
     """
     Function returns number of unique objects per class type.
@@ -307,6 +306,39 @@ def type_counts(data_table):
         counts = df.groupby("class_name")["ssObjectID"].nunique().reset_index(name="object_count")
     print(counts)
     return counts
+
+
+def discovery_cutoff_counts(df, discovery_cutoff):
+    """
+    Count unique objects discovered since the given cutoff date, grouped by class_name.
+
+    Args:
+        df: pandas DataFrame or Astropy table joined with SSObject (need 'discoverySubmissionDate' and 'numObs' columns).
+        discovery_cutoff: string or pd.Timestamp, cutoff date (inclusive).
+    
+    Returns:
+        pandas DataFrame with columns ['class_name', 'object_count'].
+    """
+    if not isinstance(df, pd.DataFrame):
+        df = df.to_pandas()
+
+    if 'discoverySubmissionDate' in df.columns and 'numObs' in df.columns:
+        df = df.copy()
+        mask = df['discoverySubmissionDate'].notna()
+        mjd_values = df.loc[mask, 'discoverySubmissionDate'].astype(float)
+        converted_times = Time(mjd_values, format='mjd').to_datetime()
+        df['discoverySubmissionDate'] = pd.to_datetime(df['discoverySubmissionDate'], errors='coerce')
+        df.loc[mask, 'discoverySubmissionDate'] = pd.to_datetime(converted_times)
+        discovery_cutoff = pd.Timestamp(discovery_cutoff)
+        filtered_df = df[df['discoverySubmissionDate'] >= discovery_cutoff] 
+        
+        counts = filtered_df.groupby("class_name")["ssObjectID"].nunique().reset_index(name="object_count")
+
+    else:
+        print("Columns do not exist in this table.")
+    print(counts)
+    return counts
+
 
 def data_grouped_mags(df):
     """
