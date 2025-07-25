@@ -215,7 +215,6 @@ def run_query(query_string, class_name, catalog = "dp1", to_pandas = False):
     # Check if table has no values or is None
     if result is None or len(result) == 0:
         print("ValueError: Results table is empty or None. Check input cutoffs.")
-        # raise ValueError("Result table is empty or None. Check input cutoffs.")
         return result
 
 
