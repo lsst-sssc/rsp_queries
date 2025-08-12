@@ -193,5 +193,7 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+./docs/notebooks/in_progress/*.ipynb
+./sso_query/query_helpers.ipynb
 
 .DS_Store
