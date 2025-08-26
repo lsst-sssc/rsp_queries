@@ -19,6 +19,7 @@ dev = [
     "jupyter", # Clears output from Jupyter notebooks
     "pytest",
     "pytest-cov", # Used to report total code coverage
+    "pyds9",  # For image display outside of RSP
 ]
 
 [project.urls]
