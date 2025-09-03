@@ -32,12 +32,19 @@ def check_rsp_access(dbg=False):
             access_good = False
     return access_good
 
-def build_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], t_min: float | Time | None = None,
-                 t_max: float | Time | None = None, calib_level=2) -> str:
-    """Build the ADQL query to search ivoa.ObsCore for images
+def build_query(center: SkyCoord | None = None, 
+                 visit: int | None = None,
+                 detector: int | None = None,
+                 bands: list | None = None, 
+                 t_min: float | Time | None = None, 
+                 t_max: float | Time | None = None, 
+                 calib_level=2) -> str:
+    """Build the ADQL query to search ivoa.ObsCore for images. Provide either a coordinate or known visit & detector ids.
 
     Args:
         center (SkyCoord): Astropy SkyCoord of center to search
+        visit
+        detector
         bands (list, optional): List of bands to search. Defaults to ['g', 'r', 'i'].
         t_min (float, Time; optional): minimum time of images; either a MJD in TAI float or a Time object
         t_max (float, Time; optional): maximum time of images; either a MJD in TAI float or a Time object
@@ -51,10 +58,14 @@ def build_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], t_min: float | 
             "s_ra, s_dec, t_min, t_max, s_region, access_url\n" \
             "FROM ivoa.ObsCore\n"\
             f"WHERE calib_level = {calib_level}\n"
-    coordinate_clause = f"AND CONTAINS(POINT('ICRS', {center.ra.deg},{center.dec.deg}), s_region) = 1\n"
-    query += coordinate_clause
+    if (center is not None):
+        coordinate_clause = f"AND CONTAINS(POINT('ICRS', {center.ra.deg},{center.dec.deg}), s_region) = 1\n"
+        query += coordinate_clause
+    if (visit is not None) & (detector is not None):
+        coordinate_clause = f"AND lsst_visit={visit} AND lsst_detector={detector}\n"
+        query += coordinate_clause
     bands_clause = ""
-    if bands and len(bands) > 0:
+    if (bands is not None) and len(bands) > 0:
         bands_clause = " OR ".join([f"lsst_band = '{band}'" for band in bands])
         bands_clause = f"AND ({bands_clause})\n"
     query += bands_clause
@@ -79,12 +90,20 @@ def build_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], t_min: float | 
 
     return query
 
-def make_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], t_min: float | Time | None = None,
-                 t_max: float | Time | None = None, calib_level=2) -> Table | None:
+
+def make_query(center: SkyCoord | None = None, 
+                 visit: int | None = None,
+                 detector: int | None = None,
+                 bands: list | None = None, 
+                 t_min: float | Time | None = None, 
+                 t_max: float | Time | None = None, 
+                 calib_level=2) -> Table | None:
     """Builds and executes a query for the RSP to find matching images
 
     Args:
         center (SkyCoord): Astropy SkyCoord of center to search
+        visit
+        detector
         bands (list, optional): List of bands to search. Defaults to ['g', 'r', 'i'].
         t_min (float, Time; optional): minimum time of images; either a MJD in TAI float or a Time object
         t_max (float, Time; optional): maximum time of images; either a MJD in TAI float or a Time object
@@ -94,7 +113,7 @@ def make_query(center: SkyCoord, bands: list = ['g', 'r', 'i'], t_min: float | T
     """
     results = None
     if check_rsp_access():
-        query = build_query(center, bands, t_min, t_max, calib_level)
+        query = build_query(center, visit, detector,bands, t_min, t_max, calib_level)
         print(f"Executing the following query:\n{query}")
         service = get_tap_service("tap")
         assert service is not None
@@ -242,3 +261,35 @@ def display_image(datalink_url: str, backend: str = 'firefly'):
         d.set('zoom to fit')
         display = d
     return d
+
+
+def diaSource_query(diaSourceId: int, catalog: str = "dp1") -> Table | None:
+    """Builds and executes a query for the RSP to find diaSource values
+
+    Args:
+        diaSourceId (int): identifier for a given diaSource
+        dataset (str; optional): dataset to be queried
+    Returns:
+        Table | None: Astropy Table of results or None in the case of errors
+    """
+    results = None
+    if check_rsp_access():
+        query = f"SELECT ra,dec,visit,detector FROM {catalog}.DiaSource\n" \
+                f"WHERE diaSourceId={diaSourceId}"
+        print(f"Executing the following query:\n{query}")
+        service = get_tap_service("tap")
+        assert service is not None
+        job = service.submit_job(query)
+        job.run()
+        job.wait(phases=['COMPLETED', 'ERROR'])
+        print('Job phase is', job.phase)
+        if job.phase == 'ERROR':
+            job.raise_if_error()
+        assert job.phase == 'COMPLETED'
+        results = job.fetch_result().to_table()
+        print(f"Found {len(results)} results")
+        job.delete()
+    else:
+        results = None
+
+    return results
